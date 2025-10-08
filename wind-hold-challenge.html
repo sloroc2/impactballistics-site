@@ -120,30 +120,43 @@
     canvas.addEventListener('mousedown',down); canvas.addEventListener('mousemove',move); window.addEventListener('mouseup',up); canvas.addEventListener('touchstart',down,{passive:true}); canvas.addEventListener('touchmove',move,{passive:true}); canvas.addEventListener('touchend',up,{passive:true});
 
     // ===== Drawing =====
-    function draw(){ const w=canvas.clientWidth, h=canvas.clientHeight; ctx.clearRect(0,0,w,h); const cx=w/2, cy=h/2; const radius=Math.min(w,h)/2; // compute mapping once
-      const {pxPerUnitX, pxPerUnitY, maxHX, maxVY} = mapUnits({x:cx,y:cy});
-      // bezel + wind ring
+    function draw(){ const w=canvas.clientWidth, h=canvas.clientHeight; ctx.clearRect(0,0,w,h); const cx=w/2, cy=h/2; const radius=Math.min(w,h)/2; const {pxPerUnitX, pxPerUnitY, maxHX, maxVY} = mapUnits({x:cx,y:cy});
+      // --- outer bezel ---
       drawWindRing(cx,cy,radius);
-      // silhouette first
-      drawIPSC(cx,cy,radius,pxPerUnitX,pxPerUnitY);
-      // wind FROM arrow (on ring)
-      drawWindArrow(cx,cy,radius);
-      // reticle translated by guess (note +V is UP => subtract)
+
+      // --- scope interior (clip) ---
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx,cy,radius-2,0,Math.PI*2); ctx.clip();
+      ctx.fillStyle = '#0b0e15'; ctx.fillRect(0,0,w,h);
+
+      // 1) RETICLE FIRST (so it's guaranteed visible)
       const offX = S.guessH*pxPerUnitX;
-      const offY = -(S.guessV)*pxPerUnitY; 
-      ctx.save(); ctx.translate(offX, offY); drawReticle(cx,cy,pxPerUnitX,pxPerUnitY,maxHX,maxVY); ctx.restore();
-      // ghost
-      if(S.drag){ ctx.fillStyle='rgba(255,255,255,0.65)'; ctx.beginPath(); ctx.arc(cx+offX, cy+offY, 2.5, 0, Math.PI*2); ctx.fill(); }
-      // reveal markers and dashed trace
-      if(S.revealed){ const th=S.trueH*pxPerUnitX, tv=-(S.trueV)*pxPerUnitY; // convert to pixels
-        const gh=offX, gv=offY; // your reticle center after translation
-        // dashed line between
-        ctx.setLineDash([6,6]); ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(cx+gh, cy+gv); ctx.lineTo(cx+th, cy+tv); ctx.stroke(); ctx.setLineDash([]);
-        dot(cx+th, cy+tv, 4, '#4cd137'); dot(cx+gh, cy+gv, 4, '#ffcc00');
-      } else { // hint band
+      const offY = -(S.guessV)*pxPerUnitY; // +V is up
+      ctx.save(); ctx.translate(offX, offY);
+      drawReticle(cx,cy,pxPerUnitX,pxPerUnitY,maxHX,maxVY);
+      ctx.restore();
+
+      // 2) Silhouette overlays the grid slightly but keeps reticle visible
+      drawIPSC(cx,cy,radius,pxPerUnitX,pxPerUnitY);
+
+      // 3) Wind FROM arrow within disk
+      drawWindArrow(cx,cy,radius);
+
+      // 4) Markers / hint band
+      if(S.revealed){
+        const th=S.trueH*pxPerUnitX, tv=-(S.trueV)*pxPerUnitY;
+        const gh=offX, gv=offY;
+        ctx.setLineDash([6,6]); ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=1.2;
+        ctx.beginPath(); ctx.moveTo(cx+gh, cy+gv); ctx.lineTo(cx+th, cy+tv); ctx.stroke(); ctx.setLineDash([]);
+        dot(cx+th, cy+tv, 4, '#4cd137');
+        dot(cx+gh, cy+gv, 4, '#ffcc00');
+      } else {
         if(S.hintBand){ const x1=cx + S.hintBand.min*pxPerUnitX; const x2=cx + S.hintBand.max*pxPerUnitX; ctx.fillStyle='#8ef5b133'; ctx.fillRect(Math.min(x1,x2), cy-radius, Math.abs(x2-x1), radius*2); }
         dot(cx+offX, cy+offY, 4, '#8ef5b1');
       }
+
+      ctx.restore(); // end clip
+
       // ladder rows under disk
       drawLadder(cx, cy + radius + 26, w*0.86, pxPerUnitX);
     }
