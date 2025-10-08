@@ -67,8 +67,8 @@
   const HOLD_MAX_H_MIL = 6.0;
   const HOLD_MAX_V_MIL = 12.0;
 
-  const BASE_VIEW_H_MIL_AT_24X = 5.0;   // ±5 mil at 24×
-  const BASE_V_RATIO = 1.6;             // vertical span / horizontal span
+  const BASE_VIEW_H_MIL_AT_24X = 5.0;
+  const BASE_V_RATIO = 1.6;
 
   const MARGIN_PX=12.0, MAP_CUSHION_UNITS=0.5;
   const JITTER_MIL=0.12;
@@ -76,7 +76,6 @@
   const RANGES=[100,200,300,400,500,600,700,800,900,1000];
   const DOPE_MIL=[0.0,0.5,1.1,1.9,3.0,4.2,5.6,7.1,8.8,10.6];
 
-  // IPSC torso in inches
   const IPSC={W:18,H:30,A_W:6,A_H:11,A_TOP:4,D:3};
 
   let units='MIL', mode='CF';
@@ -91,7 +90,7 @@
     guessV:0,guessH:0,
     upxX:0.02,upxY:0.02,
     drag:null,
-    mag:18 // 4..24
+    mag:18
   };
 
   const $=id=>document.getElementById(id);
@@ -133,11 +132,10 @@
     return (mph/(S.mphGun||6))*rangeKyd*s*sign;
   }
 
-  // Dynamic FOV based on magnification
   function currentViewSpans(){
-    const scale = 24/ clamp(S.mag,4,24); // bigger at low mag
-    const hSpan = BASE_VIEW_H_MIL_AT_24X * scale; // ±hSpan mil horizontally
-    const vSpan = hSpan * BASE_V_RATIO;            // 0..vSpan mil vertically
+    const scale = 24/ clamp(S.mag,4,24);
+    const hSpan = BASE_VIEW_H_MIL_AT_24X * scale;
+    const vSpan = hSpan * BASE_V_RATIO;
     const maxHXUnits = (units==='MIL')? hSpan : hSpan*MOA_PER_MIL;
     const maxVYUnits = (units==='MIL')? vSpan : vSpan*MOA_PER_MIL;
     return {maxHXUnits,maxVYUnits};
@@ -182,7 +180,6 @@
     S.hint=true; S.hintBand={min:S.trueH-half,max:S.trueH+half}; draw();
   }
 
-  // Map units to pixels for current canvas + view span
   function mapUnits(w,h){
     const {maxHXUnits,maxVYUnits}=currentViewSpans();
     const usableW=w-MARGIN_PX*2, usableH=h-MARGIN_PX*2;
@@ -192,7 +189,6 @@
     return {pxPerUnitX,pxPerUnitY,maxHXUnits,maxVYUnits};
   }
 
-  // Scoring with torso centered at 0,0 (vertical 0 == waterline)
   function scoreZone(dxMil,dyMil,yd){
     const pad=JITTER_MIL;
     const halfW=inchesToMilAtRange(IPSC.W/2,yd)+pad;
@@ -217,33 +213,29 @@
 
   function draw(){
     const w=canvas.clientWidth, h=canvas.clientHeight;
-    ctx.clearRect(0,0,w,h);
     const cx=w/2, cy=h/2;
     const radius=Math.min(w,h)/2;
+
+    ctx.clearRect(0,0,w,h);
     ctx.fillStyle='#0f1116'; ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.fill();
 
     const {pxPerUnitX,pxPerUnitY,maxHXUnits,maxVYUnits}=mapUnits(w,h);
 
-    // Reticle translation (holdover): DOWN = +elevation
     const offX = S.guessH*pxPerUnitX;
     const offY = S.guessV*pxPerUnitY;
 
-    // Clip to scope
     ctx.save();
     ctx.beginPath(); ctx.arc(cx,cy,radius-2,0,Math.PI*2); ctx.clip();
     ctx.fillStyle='#0b0e15'; ctx.fillRect(0,0,w,h);
 
-    // Torso centered at waterline (0.0 elevation) and screen center horizontally
     drawIPSC_Centered(cx, cy, pxPerUnitX, pxPerUnitY);
 
-    // Reticle translated by current hold
     ctx.save(); ctx.translate(offX,offY);
     drawReticle(cx,cy,pxPerUnitX,pxPerUnitY,maxHXUnits,maxVYUnits);
     ctx.restore();
 
     drawWindArrow(cx,cy,radius);
 
-    // Truth vs your aim markers on center row
     const truthX = cx + (S.trueH*pxPerUnitX);
     const yourX  = cx + offX;
     if(S.revealed){
@@ -300,7 +292,6 @@
     const tx=cx+Math.cos(a)*(tipR+18), ty=cy+Math.sin(a)*(tipR+18); ctx.fillText('FROM',tx,ty);
   }
 
-  // Torso centered at (cx,cy) with waterline = cy
   function drawIPSC_Centered(cx,cy,pxX,pxY){
     const halfW = inchesToMilAtRange(IPSC.W/2,S.range)*pxX;
     const halfH = inchesToMilAtRange(IPSC.H/2,S.range)*pxY;
@@ -310,11 +301,9 @@
     ctx.fillStyle='#1C2029'; ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1;
     roundRect(x,y,w,h,8,true,true);
 
-    // Waterline at cy
     ctx.strokeStyle='rgba(255,255,255,0.28)'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(x, cy); ctx.lineTo(x+w, cy); ctx.stroke();
 
-    // Head (upright rectangle) above torso
     const headWidth  = Math.min(halfW*0.55, w*0.32);
     const headHeight = headWidth * 1.3;
     const headY = y - headHeight*0.70;
@@ -323,7 +312,6 @@
     ctx.strokeStyle='rgba(255,255,255,0.25)';
     roundRect(cx - headWidth/2, headY, headWidth, headHeight, 6, false, true);
 
-    // A-zone
     const aHalfW = inchesToMilAtRange(IPSC.A_W/2,S.range)*pxX;
     const aHalfH = inchesToMilAtRange(IPSC.A_H/2,S.range)*pxY;
     const torsoTopY = y;
@@ -355,15 +343,12 @@
     const centerQuiet=isMOA?1.0:0.0;
     const isMult=(v,step)=>{const m=Math.abs(v)%step;return m<eps||step-m<eps;};
 
-    // Main axes
     ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.8;
     ctx.beginPath(); ctx.moveTo(cx - maxHX*pxX, cy); ctx.lineTo(cx + maxHX*pxX, cy); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - maxVY*pxY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - maxVY*pxY); ctx.lineTo(cx, cy + maxVY*pxY); ctx.stroke();
 
-    // Center cross
     ctx.beginPath(); ctx.moveTo(cx-8,cy); ctx.lineTo(cx+8,cy); ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy+8); ctx.stroke();
 
-    // Horizontal ladder ticks
     for(let u=-maxHX; u<=maxHX+eps; u+=minorStep){
       const absu=Math.abs(u); if(isMOA && absu<=centerQuiet+eps && !isMult(absu,majorStep)) continue;
       const x=cx + u*pxX; let len=7; ctx.lineWidth=1.2; ctx.strokeStyle='rgba(255,255,255,0.9)';
@@ -382,31 +367,44 @@
       }
     }
 
-    // Rows down
     const maxRow=Math.floor(maxVY);
     for(let row=rowStep; row<=maxRow; row+=rowStep){
-      const y=cy + row*pxY; const branch=maxHX*(row/maxVY);
-      const xL=cx-branch*pxX, xR=cx+branch*pxX;
+      const branch=maxHX*(row/maxVY);
+
+      const yDown=cy + row*pxY;
+      const xLDown=cx-branch*pxX, xRDown=cx+branch*pxX;
       ctx.strokeStyle=isMOA?(row%10===0?'rgba(255,255,255,1.0)':row%5===0?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.7)'):'rgba(255,255,255,0.8)';
       ctx.lineWidth=isMOA?(row%10===0?2:row%5===0?1.6:1.2):1.2;
-      ctx.beginPath(); ctx.moveTo(xL,y); ctx.lineTo(xR,y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(xLDown,yDown); ctx.lineTo(xRDown,yDown); ctx.stroke();
+
+      const yUp=cy - row*pxY;
+      const xLUp=cx-branch*pxX, xRUp=cx+branch*pxX;
+      ctx.beginPath(); ctx.moveTo(xLUp,yUp); ctx.lineTo(xRUp,yUp); ctx.stroke();
 
       for(let u=-branch; u<=branch+eps; u+=minorStep){
         const absu=Math.abs(u); if(isMOA && absu<=centerQuiet+eps && !isMult(absu,1.0)) continue;
-        const x=cx + u*pxX; let len=isMOA?5:4; ctx.lineWidth=1.0; ctx.strokeStyle='rgba(255,255,255,0.85)';
+        const lenBase=isMOA?5:4;
+
+        let len=lenBase, lw=1.0;
         if(isMOA){
-          if(isMult(absu,10)){len=11; ctx.lineWidth=1.6;}
-          else if(isMult(absu,5)){len=9; ctx.lineWidth=1.4;}
-          else if(isMult(absu,2)){len=7; ctx.lineWidth=1.2;}
+          if(isMult(absu,10)){len=11; lw=1.6;}
+          else if(isMult(absu,5)){len=9; lw=1.4;}
+          else if(isMult(absu,2)){len=7; lw=1.2;}
         }else{
-          if(isMult(absu,1)){len=8; ctx.lineWidth=1.2;}
+          if(isMult(absu,1)){len=8; lw=1.2;}
         }
-        ctx.beginPath(); ctx.moveTo(x,y-len/2); ctx.lineTo(x,y+len/2); ctx.stroke();
+
+        const x=cx + u*pxX;
+        ctx.lineWidth=lw; ctx.strokeStyle='rgba(255,255,255,0.85)';
+        ctx.beginPath(); ctx.moveTo(x,yDown-len/2); ctx.lineTo(x,yDown+len/2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x,yUp-len/2); ctx.lineTo(x,yUp+len/2); ctx.stroke();
       }
 
       if(row%rowLabelEvery===0){
         ctx.fillStyle='rgba(225,230,240,0.95)'; ctx.font='12px ui-monospace,monospace'; ctx.textAlign='right'; ctx.textBaseline='bottom';
-        ctx.fillText(String(row), xL-10, y-6);
+        ctx.fillText(String(row), xLDown-10, yDown-6);
+        ctx.textBaseline='top';
+        ctx.fillText(String(-row), xLUp-10, yUp+6);
       }
     }
 
@@ -426,7 +424,6 @@
     }
   }
 
-  // Pointer/drag
   function down(e){
     e.preventDefault();
     const r=canvas.getBoundingClientRect();
@@ -443,14 +440,14 @@
     const dx=(x-S.drag.x)*S.upxX, dy=(y-S.drag.y)*S.upxY;
     const maxHX=(units==='MIL')?HOLD_MAX_H_MIL: HOLD_toUnits(HOLD_MAX_H_MIL);
     const maxVY=(units==='MIL')?HOLD_MAX_V_MIL: HOLD_toUnits(HOLD_MAX_V_MIL);
+
     S.guessH=clamp(snap(S.drag.h+dx), -maxHX,  maxHX);
-    S.guessV=clamp(snap(S.drag.v + dy),     0,  maxVY);
+    S.guessV=clamp(snap(S.drag.v + dy), -maxVY,  maxVY);   // <-- allow above waterline
     HUD.tryV.textContent=S.guessV.toFixed(1)+' '+units;
     draw();
   }
   function up(){ if(!S.drag) return; S.guessH=snap(S.guessH); S.guessV=snap(S.guessV); S.drag=null; draw(); }
 
-  // Wire events
   canvas.addEventListener('mousedown',down);
   canvas.addEventListener('mousemove',move);
   window.addEventListener('mouseup',up);
@@ -458,7 +455,6 @@
   canvas.addEventListener('touchmove',move,{passive:false});
   canvas.addEventListener('touchend',up);
 
-  // Zoom via buttons or wheel
   BTN.magUp.onclick = ()=>{ S.mag=clamp(S.mag+1,4,24); updateHUD(); draw(); };
   BTN.magDown.onclick = ()=>{ S.mag=clamp(S.mag-1,4,24); updateHUD(); draw(); };
   canvas.addEventListener('wheel', (e)=>{
