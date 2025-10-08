@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Privacy Policy • Impact Ballistics</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="styles.css">
+<meta name="robots" content="noai, noimageai">
+</head>
+<body>
+<header class="container nav">
+  <div class="brand"><div class="logo"></div><strong>Impact Ballistics</strong></div>
+  <nav>
+    <a href="/">Home</a>
+    <a href="legal.html">Legal</a>
+  </nav>
+</header>
+
+<main class="container prose">
+  <h1>Privacy Policy</h1>
+  <p>Last updated: <span id="d"></span></p>
+
+  <h2>Data We Do Not Collect</h2>
+  <p>We do not sell your data. We do not run ad trackers, social pixels, or analytics that fingerprint devices.</p>
+
+  <h2>Data The App Uses</h2>
+  <ul>
+    <li><strong>Location (approximate):</strong> used only to find the nearest public weather station for temperature, pressure, humidity, wind, and elevation. Location data never leaves the device except as part of a one-off request to a weather provider.</li>
+    <li><strong>Compass/Heading & Sensors:</strong> used locally to compute relative wind. Not stored or sent to servers.</li>
+    <li><strong>Saved Profiles:</strong> rifles, ammo, and dope you enter are stored locally on your device.</li>
+  </ul>
+
+  <h2>Weather Provider Attribution</h2>
+  <p>Weather data is obtained via the <a href="https://openweathermap.org/api" rel="noopener">OpenWeather</a> API under their free service tier. “OpenWeather” and “OpenWeatherMap” are trademarks of OpenWeather Ltd. Attribution is provided here and in the site footer to meet their usage requirements.</p>
+
+  <h2>What We Send Over the Network</h2>
+  <ul>
+    <li>Requests to OpenWeather include coarse coordinates (or a station/city id) to return local conditions. No names, emails, or rifle/ballistics data are transmitted.</li>
+  </ul>
+
+  <h2>Your Choices</h2>
+  <ul>
+    <li>You can disable location permissions and enter weather manually.</li>
+    <li>Uninstalling the app removes your local data.</li>
+  </ul>
+
+  <h2>Contact</h2>
+  <p>Questions about privacy? Email: support@impactballisticsapp.com</p>
+</main>
+
+<footer class="container footer">
+  <div>© <span id="y"></span> Impact Ballistics.</div>
+  <div>Weather data via <a href="https://openweathermap.org/" rel="noopener">OpenWeather</a>.</div>
+</footer>
+<script>
+const d=new Date();document.getElementById('d').textContent=d.toISOString().slice(0,10);
+document.getElementById('y').textContent=d.getFullYear();
+</script>
+</body>
+</html>
