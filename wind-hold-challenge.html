@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wind Hold Challenge • Impact Ballistics</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="styles.css?v=10">
+<meta name="description" content="Practice wind calls like the Impact Ballistics app. Random range, wind, and angle. Enter your hold in MIL/MOA, check, score, repeat.">
+<style>
+/* Page-scoped UI on top of your base theme */
+.page { display:grid; grid-template-columns: 1.1fr .9fr; gap:16px; }
+.panel { background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.02)); border:1px solid var(--line); border-radius:18px; padding:18px; }
+.panel h2 { margin:0 0 10px; font-size:20px }
+.controls { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:12px; }
+.control { display:flex; flex-direction:column; gap:6px; }
+.control label { font-size:13px; color:var(--muted); }
+.input, select, button { background:#111612; color:var(--ink); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+select { cursor:pointer }
+.row { display:flex; gap:10px; align-items:center }
+.small { font-size:13px; color:var(--muted) }
+
+.challenge { display:grid; gap:12px }
+.readout { display:flex; flex-wrap:wrap; gap:10px; }
+.pill { border:1px solid var(--line); border-radius:999px; padding:6px 10px; }
+.big { font-size:28px; font-weight:800; letter-spacing:.3px }
+
+.target {
+  height:240px; border:1px solid var(--line); border-radius:16px;
+  background:
+    radial-gradient(circle 2px at 50% 50%, var(--brand) 0 2px, transparent 2px),
+    radial-gradient(circle 40px at 50% 50%, transparent 39px, rgba(255,255,255,.05) 40px, transparent 41px),
+    radial-gradient(circle 80px at 50% 50%, transparent 79px, rgba(255,255,255,.05) 80px, transparent 81px),
+    #0f130f;
+  position:relative; overflow:hidden;
+}
+.crosswind {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:180px; height:180px; border-radius:50%; border:1px dashed var(--line);
+}
+.arrow {
+  --deg: 0;
+  position:absolute; left:50%; top:50%; transform-origin:0 50%;
+  transform: translate(-50%,-50%) rotate(var(--deg));
+  width:140px; height:2px; background:var(--brand); opacity:.9;
+}
+.arrow::after {
+  content:""; position:absolute; right:-6px; top:-4px;
+  border:6px solid transparent; border-left-color:var(--brand);
+}
+
+.num {
+  font: 800 18px/1 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;
+  padding:10px 12px; border-radius:12px; border:1px solid var(--line); min-width:90px; text-align:center;
+}
+
+.actions { display:flex; flex-wrap:wrap; gap:10px; }
+button.primary { background:linear-gradient(145deg,var(--brand),var(--brand-2)); color:#0b0f0b; border:0; font-weight:800; }
+button.ghost { background:transparent; border:1px solid var(--line); }
+.notice { color:var(--muted); font-size:13px }
+
+.scorebox { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.score { font-weight:800; }
+.good { color:#7EE887 } .bad { color:#E87777 }
+
+kbd { background:#0f130f; border:1px solid var(--line); border-radius:6px; padding:2px 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; }
+@media (max-width: 900px){ .page { grid-template-columns: 1fr; } .target{ height:220px } }
+</style>
+</head>
+<body>
+<header id="site-header" class="container nav"></header>
+<script src="header.js?v=4"></script>
+
+<main class="container">
+  <section class="hero">
+    <div class="kicker">Trainer</div>
+    <h1 class="h1">Wind Hold Challenge</h1>
+    <p class="sub">Match the app’s feel: choose BC or GE, get a random scenario, enter your hold in MIL/MOA, and check. Scores and settings save locally.</p>
+  </section>
+
+  <div class="page">
+    <!-- Left: Setup / Inputs -->
+    <div class="panel">
+      <h2>Setup</h2>
+      <div class="controls" style="margin-bottom:10px">
+        <div class="control">
+          <label for="mode">Mode</label>
+          <select id="mode">
+            <option value="GE">GE (mph-gun)</option>
+            <option value="BC">Factory BC</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="units">Units</label>
+          <select id="units">
+            <option value="MIL">MIL</option>
+            <option value="MOA">MOA</option>
+          </select>
+        </div>
+
+        <!-- GE inputs -->
+        <div class="control" data-show="GE">
+          <label for="mphGun">GE mph-gun <span class="small">(e.g., 4, 6, 8)</span></label>
+          <input class="input" type="number" id="mphGun" min="1" step="0.1" placeholder="e.g. 6">
+        </div>
+
+        <!-- BC inputs -->
+        <div class="control" data-show="BC">
+          <label for="bc">BC (G1)</label>
+          <input class="input" type="number" id="bc" step="0.001" placeholder="e.g. 0.510">
+        </div>
+        <div class="control" data-show="BC">
+          <label for="mv">Muzzle Velocity</label>
+          <input class="input" type="number" id="mv" step="1" placeholder="fps">
+        </div>
+      </div>
+
+      <h2>Scenario</h2>
+      <div class="controls">
+        <div class="control">
+          <label for="profile">Profile</label>
+          <select id="profile">
+            <option value="CF">Centerfire (200–1000)</option>
+            <option value="RF">Rimfire (100–400)</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="range">Range</label>
+          <div class="row">
+            <input class="input" type="number" id="range" min="25" step="25">
+            <span class="pill" id="rangeUnits">yd</span>
+          </div>
+        </div>
+        <div class="control">
+          <label for="wind">Wind speed</label>
+          <div class="row">
+            <input class="input" type="number" id="wind" min="0" step="0.1">
+            <select id="windUnits">
+              <option value="MPH">MPH</option>
+              <option value="MS">m/s</option>
+            </select>
+          </div>
+        </div>
+        <div class="control">
+          <label for="angle">Wind angle <span class="small">(0 = head/tail, 90 = full value)</span></label>
+          <input class="input" type="number" id="angle" min="0" max="180" step="1">
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:12px">
+        <button id="randomize" class="primary">Randomize</button>
+        <button id="saveSettings" class="ghost">Save Settings</button>
+        <span class="notice">Tip: press <kbd>N</kbd> for new scenario.</span>
+      </div>
+    </div>
+
+    <!-- Right: Challenge / Target -->
+    <div class="panel challenge">
+      <h2>Your Rep</h2>
+      <div class="readout">
+        <span class="pill">Profile: <strong id="rProfile">CF</strong></span>
+        <span class="pill">Range: <strong id="rRange">—</strong> <span id="rRangeUnits">yd</span></span>
+        <span class="pill">Wind: <strong id="rWind">—</strong> <span id="rWindUnits">mph</span></span>
+        <span class="pill">Angle: <strong id="rAngle">—</strong>°</span>
+        <span class="pill">Dir: <strong id="rDir">—</strong></span>
+      </div>
+
+      <div class="target" id="target">
+        <div class="crosswind"></div>
+        <div class="arrow" id="arrow"></div>
+      </div>
+
+      <div class="row">
+        <div class="control" style="flex:1">
+          <label for="answer">Your hold (<span id="ansUnits">MIL</span>)</label>
+          <input class="input big" type="number" id="answer" step="0.1" placeholder="e.g., 1.2">
+        </div>
+        <div class="control">
+          <label>&nbsp;</label>
+          <button id="check" class="primary">Check</button>
+        </div>
+      </div>
+
+      <div class="scorebox">
+        <div>Result: <span id="result" class="score">—</span></div>
+        <div>| Session: <span id="sessGood" class="good">0</span> ✓ / <span id="sessBad" class="bad">0</span> ✗</div>
+        <div>| Lifetime: <span id="lifeGood" class="good">0</span> ✓ / <span id="lifeBad" class="bad">0</span> ✗</div>
+      </div>
+
+      <div class="row">
+        <span class="small">Tolerance: ± <span id="tol">0.2</span> <span id="tolUnits">MIL</span> (change units to switch)</span>
+      </div>
+
+      <div class="actions">
+        <button id="showAnswer" class="ghost">Show Answer</button>
+        <button id="next" class="primary">Next Rep</button>
+      </div>
+
+      <div class="small" id="debug" style="opacity:.7"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="container footer">
+  <div>© <span id="y"></span> Impact Ballistics. All rights reserved.</div>
+</footer>
+
+<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+<script>
+/* ============================
+   Wind Hold Challenge Logic
+   ============================
+   This mirrors the app’s structure:
+   - crosswind = sin(angle)
+   - GE: user mph-gun
+   - BC: mphGun ≈ clamp(round(BC*10), 3..10)
+   - RF fallback mph-gun from velocity (proxy)
+   - CF fallback mph-gun = 5.5
+   - output: single-decimal MIL/MOA (round when displaying)
+*/
+
+const $ = sel => document.querySelector(sel);
+const val = id => document.getElementById(id).value;
+
+const els = {
+  mode: $('#mode'),
+  units: $('#units'),
+  mphGun: $('#mphGun'),
+  bc: $('#bc'),
+  mv: $('#mv'),
+  profile: $('#profile'),
+  range: $('#range'),
+  wind: $('#wind'),
+  windUnits: $('#windUnits'),
+  angle: $('#angle'),
+  ansUnits: $('#ansUnits'),
+  tolUnits: $('#tolUnits'),
+  tol: $('#tol'),
+  rProfile: $('#rProfile'),
+  rRange: $('#rRange'),
+  rRangeUnits: $('#rRangeUnits'),
+  rWind: $('#rWind'),
+  rWindUnits: $('#rWindUnits'),
+  rAngle: $('#rAngle'),
+  rDir: $('#rDir'),
+  arrow: $('#arrow'),
+  answer: $('#answer'),
+  result: $('#result'),
+  sessGood: $('#sessGood'),
+  sessBad: $('#sessBad'),
+  lifeGood: $('#lifeGood'),
+  lifeBad: $('#lifeBad'),
+  debug: $('#debug')
+};
+
+const LS = {
+  get(){ try { return JSON.parse(localStorage.getItem('whc-state')||'{}'); } catch { return {}; } },
+  set(obj){ localStorage.setItem('whc-state', JSON.stringify(obj)); }
+};
+
+function setVisible() {
+  document.querySelectorAll('[data-show]').forEach(el=>{
+    el.style.display = (el.getAttribute('data-show') === els.mode.value) ? 'flex' : 'none';
+  });
+}
+
+function mphToMs(v){ return v * 0.44704; }
+function msToMph(v){ return v / 0.44704; }
+function milToMoa(m){ return m * 3.43775; }
+function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
+function rand(a,b,step=1){ const n=Math.floor((b-a)/step); return a + Math.floor(Math.random()*(n+1))*step; }
+
+function randomize() {
+  const isCF = els.profile.value === 'CF';
+  const range = isCF ? rand(200,1000,100) : rand(100,400,25);
+  const wind = rand(4,18,1); // mph
+  const angle = rand(0,180,5);
+
+  els.range.value = range;
+  els.wind.value = els.windUnits.value === 'MS' ? mphToMs(wind).toFixed(1) : wind;
+  els.angle.value = angle;
+
+  updateScenarioReadout();
+  drawArrow(angle);
+  els.answer.value = '';
+  els.result.textContent = '—';
+}
+
+function lrFromAngle(angleDeg){
+  // 0=head, 180=tail, 90 = full value. We'll say 0..89 = Right-to-Left?, 91..180 = Left-to-Right? Keep it simple:
+  // Use sine for magnitude and sign from cosine quadrant (just to display a direction).
+  // But practically, shooters think in L/R based on wind FROM. We'll map:
+  // angle < 90 => "L→R" (hold Right), angle > 90 => "R→L" (hold Left).
+  if (angleDeg === 90) return 'Full';
+  return angleDeg < 90 ? 'R' : 'L';
+}
+
+function updateScenarioReadout() {
+  els.rProfile.textContent = els.profile.value;
+  els.rRange.textContent = els.range.value;
+  els.rRangeUnits.textContent = 'yd';
+  const windVal = Number(els.wind.value);
+  const windMph = els.windUnits.value === 'MS' ? msToMph(windVal) : windVal;
+  els.rWind.textContent = windMph.toFixed(1);
+  els.rWindUnits.textContent = 'mph';
+  const ang = Number(els.angle.value);
+  els.rAngle.textContent = ang;
+  els.rDir.textContent = lrFromAngle(ang);
+}
+
+function drawArrow(angleDeg){
+  els.arrow.style.setProperty('--deg', angleDeg-90 + 'deg'); // 90=full, left-to-right baseline
+}
+
+function saveSettings() {
+  const s = {
+    mode: els.mode.value,
+    units: els.units.value,
+    mphGun: els.mphGun.value,
+    bc: els.bc.value,
+    mv: els.mv.value,
+    profile: els.profile.value,
+    windUnits: els.windUnits.value
+  };
+  LS.set({ ...LS.get(), settings: s, lifetime: getLifetime() });
+}
+
+function loadSettings() {
+  const st = LS.get();
+  if (st.settings){
+    els.mode.value = st.settings.mode || 'GE';
+    els.units.value = st.settings.units || 'MIL';
+    els.mphGun.value = st.settings.mphGun || '';
+    els.bc.value = st.settings.bc || '';
+    els.mv.value = st.settings.mv || '';
+    els.profile.value = st.settings.profile || 'CF';
+    els.windUnits.value = st.settings.windUnits || 'MPH';
+  }
+  setVisible();
+  setUnits();
+  setLifetime(st.lifetime || {good:0,bad:0});
+}
+
+function getLifetime(){ return { good: Number(els.lifeGood.textContent)||0, bad: Number(els.lifeBad.textContent)||0 }; }
+function setLifetime(v){ els.lifeGood.textContent = v.good; els.lifeBad.textContent = v.bad; }
+
+let sess = { good:0, bad:0 };
+
+function setUnits(){
+  els.ansUnits.textContent = els.units.value;
+  els.tolUnits.textContent = els.units.value;
+  els.tol.textContent = els.units.value === 'MIL' ? '0.2' : (milToMoa(0.2)).toFixed(1);
+  updateScenarioReadout();
+}
+
+/* ========= Wind hold math (mil first, convert at display) =========
+   Mirrors app approach, with RF/CF fallbacks when BC/GE missing.
+*/
+function rfAutoMphFromVelocity(mv){
+  // Rough proxy until we port your exact table:
+  // Around 1.6 at 950 fps up to ~3.0 at 1350 fps, linear-ish
+  const v = Math.max(800, Math.min(1500, mv||1070));
+  return clamp(1.6 + (v-900)/300 * 0.9, 1.6, 3.0);
+}
+
+function pickMphGun(sc){
+  if (sc.mode === 'GE' && sc.mphGun > 0) return sc.mphGun;
+  if (sc.mode === 'BC' && sc.bc > 0) return clamp(Math.round(sc.bc*10), 3, 10);
+  if (sc.profile === 'RF') return rfAutoMphFromVelocity(sc.mv || 1070);
+  return 5.5; // CF default
+}
+
+function computeHold(sc){
+  // sc = { mode, units, mphGun, bc, mv, profile:'CF'|'RF', rangeYd, windMph, angleDeg }
+  const cross = Math.sin(sc.angleDeg * Math.PI/180); // 0..1
+  const mphGunUsed = pickMphGun(sc);
+
+  const mil = (sc.rangeYd/1000) * (sc.windMph / mphGunUsed) * cross;
+
+  // Spin drift disabled by default; enable if you want to include it in “answer”
+  const includeSpin = false;
+  const milWithSpin = mil + (includeSpin ? spinDriftMil(sc.rangeYd) : 0);
+
+  return sc.units === 'MIL' ? milWithSpin : milToMoa(milWithSpin);
+}
+
+// Optional placeholder spin model (right-hand twist) — swap with your exact app function if needed
+function spinDriftMil(yards){
+  const y = Math.max(0, yards);
+  return 0.05 * Math.pow(y/600, 1.7);
+}
+
+function checkAnswer(show=false){
+  const sc = getScenario();
+  const expected = computeHold(sc);
+  const tol = sc.units === 'MIL' ? 0.2 : milToMoa(0.2);
+
+  let user = Number(els.answer.value);
+  if (show || isNaN(user)) user = expected;
+
+  const diff = Math.abs(user - expected);
+  const ok = diff <= tol;
+
+  // Update scores
+  if (!show){
+    if (ok){ sess.good++; } else { sess.bad++; }
+    els.sessGood.textContent = sess.good;
+    els.sessBad.textContent = sess.bad;
+
+    const life = getLifetime();
+    if (ok){ life.good++; } else { life.bad++; }
+    setLifetime(life);
+    LS.set({ ...LS.get(), lifetime: life, settings: LS.get().settings });
+  }
+
+  const u = sc.units;
+  els.result.textContent = `${expected.toFixed(1)} ${u} ${ok ? '✓' : '✗'}`;
+  els.result.className = 'score ' + (ok ? 'good' : 'bad');
+
+  els.debug.textContent = `mode=${sc.mode}, mphGunUsed=${pickMphGun(sc).toFixed(2)}, wind=${sc.windMph.toFixed(1)} mph, angle=${sc.angleDeg}°, range=${sc.rangeYd} yd`;
+}
+
+function getScenario() {
+  const windVal = Number(els.wind.value);
+  const windMph = els.windUnits.value === 'MS' ? msToMph(windVal) : windVal;
+  return {
+    mode: els.mode.value,
+    units: els.units.value,
+    mphGun: Number(els.mphGun.value || 0),
+    bc: Number(els.bc.value || 0),
+    mv: Number(els.mv.value || 0),
+    profile: els.profile.value, // CF or RF
+    rangeYd: Number(els.range.value),
+    windMph,
+    angleDeg: Number(els.angle.value)
+  };
+}
+
+function nextRep(){
+  randomize();
+  els.answer.focus();
+}
+
+function init(){
+  loadSettings();
+  randomize();
+
+  // wire events
+  els.mode.addEventListener('change', ()=>{ setVisible(); saveSettings(); });
+  els.units.addEventListener('change', ()=>{ setUnits(); saveSettings(); });
+  els.windUnits.addEventListener('change', ()=>{ updateScenarioReadout(); saveSettings(); });
+  els.profile.addEventListener('change', ()=>{ updateScenarioReadout(); saveSettings(); });
+
+  $('#randomize').addEventListener('click', nextRep);
+  $('#saveSettings').addEventListener('click', saveSettings);
+  $('#check').addEventListener('click', ()=>checkAnswer(false));
+  $('#showAnswer').addEventListener('click', ()=>checkAnswer(true));
+  $('#next').addEventListener('click', nextRep);
+
+  document.addEventListener('keydown', (e)=>{
+    if (e.key==='n' || e.key==='N'){ nextRep(); }
+    if (e.key==='Enter'){ checkAnswer(false); }
+  });
+
+  updateScenarioReadout();
+  drawArrow(Number(els.angle.value||90));
+}
+
+init();
+</script>
+</body>
+</html>
