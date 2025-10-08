@@ -1,18 +1,31 @@
+// Build shared header
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('site-header');
   if (!el) return;
+
   el.innerHTML = `
     <div class="brand"><div class="logo"></div><strong>Impact Ballistics</strong></div>
     <nav class="site-nav">
       <a href="/">Home</a>
       <a href="help.html">Help</a>
       <a href="screenshots.html">Screenshots</a>
+      <a href="wind-hold-challenge.html">Wind Challenge</a>
       <a href="legal.html">Legal</a>
       <a href="privacy.html">Privacy</a>
     </nav>
   `;
+
+  // Highlight current page
+  const path = location.pathname.replace(/^\//,'').toLowerCase() || 'index.html';
+  document.querySelectorAll('.site-nav a').forEach(a => {
+    const href = a.getAttribute('href').toLowerCase();
+    // treat "/" as index.html for highlight purposes
+    const normalized = href === '/' ? 'index.html' : href;
+    if (path === normalized) a.classList.add('active');
+  });
 });
-// --- Watermark: apply on every page EXCEPT screenshots ---
+
+// Site-wide watermark (off on screenshots page)
 document.addEventListener('DOMContentLoaded', () => {
   const b = document.body;
   if (!b.classList.contains('screenshots')) {
@@ -24,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
       backgroundSize: '520px auto'
     });
   } else {
-    // make sure it stays off on screenshots
     b.style.backgroundImage = 'none';
   }
 });
