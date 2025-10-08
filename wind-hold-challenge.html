@@ -23,6 +23,8 @@
     .hud{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}
     .footer{grid-template-columns:1fr}
   }
+  .zoomControls{display:inline-flex;gap:6px;margin-left:8px}
+  .zoomControls .btn{padding:8px 10px;border-radius:10px}
 </style>
 </head>
 <body>
@@ -34,6 +36,12 @@
     <div class="pill">📈 <strong>Avg:</strong> <span id="avg">0.0</span> <span id="unitsAvg">MIL</span> (<span id="shotIdx">0</span>/10)</div>
     <div class="pill">🎯 <strong>Score:</strong> <span id="score">0</span> • High: <span id="high">0</span></div>
     <div class="pill">⚙️ <strong><span id="unitsLabel">MIL</span></strong> • <span id="modeLabel">Centerfire</span></div>
+    <div class="pill">🔎 <strong>Mag:</strong> <span id="magVal">18×</span>
+      <span class="zoomControls">
+        <button id="magDown" class="btn">−</button>
+        <button id="magUp" class="btn">+</button>
+      </span>
+    </div>
   </div>
 
   <div class="stage"><canvas id="scope"></canvas></div>
@@ -54,22 +62,21 @@
 
 <script>
 (()=>{
-  // ==== Core constants ====
   const MOA_PER_MIL = 3.43774677;
 
-  // Functional hold limits (clamp)
-  const HOLD_MAX_H_MIL = 6.0;    // ±6 mil
-  const HOLD_MAX_V_MIL = 12.0;   // 0..12 mil
+  const HOLD_MAX_H_MIL = 6.0;
+  const HOLD_MAX_V_MIL = 12.0;
 
-  // Visual field (makes reticle smaller/more usable)
-  const VIEW_MAX_H_MIL = 10.0;   // shows ±10 mil
-  const VIEW_MAX_V_MIL = 16.0;   // shows 0..16 mil
+  const BASE_VIEW_H_MIL_AT_24X = 5.0;   // ±5 mil at 24×
+  const BASE_V_RATIO = 1.6;             // vertical span / horizontal span
 
   const MARGIN_PX=12.0, MAP_CUSHION_UNITS=0.5;
   const JITTER_MIL=0.12;
 
   const RANGES=[100,200,300,400,500,600,700,800,900,1000];
   const DOPE_MIL=[0.0,0.5,1.1,1.9,3.0,4.2,5.6,7.1,8.8,10.6];
+
+  // IPSC torso in inches
   const IPSC={W:18,H:30,A_W:6,A_H:11,A_TOP:4,D:3};
 
   let units='MIL', mode='CF';
@@ -83,15 +90,16 @@
     trueV:0,trueH:0,
     guessV:0,guessH:0,
     upxX:0.02,upxY:0.02,
-    drag:null
+    drag:null,
+    mag:18 // 4..24
   };
 
-  // ==== Helpers ====
   const $=id=>document.getElementById(id);
   const HUD={wind:$('wind'),from:$('from'),range:$('range'),tryV:$('tryV'),avg:$('avg'),unitsAvg:$('unitsAvg'),
              shotIdx:$('shotIdx'),score:$('score'),high:$('high'),unitsLabel:$('unitsLabel'),
-             modeLabel:$('modeLabel'),round:$('round')};
-  const BTN={hint:$('hint'),reveal:$('reveal'),toggleUnits:$('toggleUnits'),toggleMode:$('toggleMode'),newRound:$('newRound')};
+             modeLabel:$('modeLabel'),round:$('round'),magVal:$('magVal')};
+  const BTN={hint:$('hint'),reveal:$('reveal'),toggleUnits:$('toggleUnits'),toggleMode:$('toggleMode'),
+             newRound:$('newRound'),magUp:$('magUp'),magDown:$('magDown')};
 
   const canvas=$('scope'); const ctx=canvas.getContext('2d',{alpha:true});
 
@@ -99,8 +107,6 @@
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const snap=v=>(units==='MIL'?Math.round(v*10)/10:Math.round(v*4)/4);
   const inchesToMilAtRange=(inches,yd)=>inches*(1000/(yd*36));
-
-  // HOISTED BEFORE USE (fix)
   const HOLD_toUnits = (mil)=> (units==='MIL' ? mil : mil*MOA_PER_MIL);
 
   function tryDopeMil(r){
@@ -119,6 +125,7 @@
     return 2.0;
   }
   const resolveMphGun=()=> (mode==='RF')? mphFromRF(1080) : 6.0;
+
   function windHoldMil(rYd,mph,fromDeg){
     const rangeKyd=rYd/1000;
     const s=Math.abs(Math.sin((fromDeg%360)*Math.PI/180));
@@ -126,7 +133,16 @@
     return (mph/(S.mphGun||6))*rangeKyd*s*sign;
   }
 
-  // ==== Canvas sizing ====
+  // Dynamic FOV based on magnification
+  function currentViewSpans(){
+    const scale = 24/ clamp(S.mag,4,24); // bigger at low mag
+    const hSpan = BASE_VIEW_H_MIL_AT_24X * scale; // ±hSpan mil horizontally
+    const vSpan = hSpan * BASE_V_RATIO;            // 0..vSpan mil vertically
+    const maxHXUnits = (units==='MIL')? hSpan : hSpan*MOA_PER_MIL;
+    const maxVYUnits = (units==='MIL')? vSpan : vSpan*MOA_PER_MIL;
+    return {maxHXUnits,maxVYUnits};
+  }
+
   function resize(){
     const r=canvas.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
     canvas.width=Math.floor(r.width*dpr); canvas.height=Math.floor(r.height*dpr);
@@ -134,7 +150,6 @@
   }
   window.addEventListener('resize',resize);
 
-  // ==== Game flow ====
   const pickRange=isRF=>{const min=100,max=isRF?400:1000;const steps=Math.floor((max-min)/50);return min+Math.floor(Math.random()*(steps+1))*50;};
 
   function newRound(){
@@ -145,7 +160,7 @@
     S.mphGun=resolveMphGun();
     const eMil=tryDopeMil(S.range); S.trueV=(units==='MIL')?eMil:toMOA(eMil);
     const wMil=windHoldMil(S.range,S.wind,S.from); S.trueH=(units==='MIL')?wMil:toMOA(wMil);
-    S.guessH=0; S.guessV=S.trueV; // start at suggested elevation
+    S.guessH=0; S.guessV=S.trueV;
     updateHUD(); draw();
   }
 
@@ -161,12 +176,15 @@
     S.score+=pts; S.high=Math.max(S.high,S.score); localStorage.setItem('xwind_high',String(S.high));
     S.sumAbs+=Math.hypot(dx,dy); S.n++; updateHUD(); draw();
   }
-  function hint(){ if(S.revealed) return; const halfMil=0.2; const half=(units==='MIL')?halfMil:toMOA(halfMil); S.hint=true; S.hintBand={min:S.trueH-half,max:S.trueH+half}; draw(); }
+  function hint(){
+    if(S.revealed) return;
+    const halfMil=0.2; const half=(units==='MIL')?halfMil:toMOA(halfMil);
+    S.hint=true; S.hintBand={min:S.trueH-half,max:S.trueH+half}; draw();
+  }
 
-  // ==== Mapping (VIEW_* controls size on screen) ====
+  // Map units to pixels for current canvas + view span
   function mapUnits(w,h){
-    const maxHXUnits = (units==='MIL')? VIEW_MAX_H_MIL : VIEW_MAX_H_MIL*MOA_PER_MIL;
-    const maxVYUnits = (units==='MIL')? VIEW_MAX_V_MIL : VIEW_MAX_V_MIL*MOA_PER_MIL;
+    const {maxHXUnits,maxVYUnits}=currentViewSpans();
     const usableW=w-MARGIN_PX*2, usableH=h-MARGIN_PX*2;
     const pxPerUnitX=usableW/(maxHXUnits*2.0);
     const pxPerUnitY=usableH/(maxVYUnits + MAP_CUSHION_UNITS);
@@ -174,29 +192,29 @@
     return {pxPerUnitX,pxPerUnitY,maxHXUnits,maxVYUnits};
   }
 
-  // ==== Scoring (MIL-based) ====
+  // Scoring with torso centered at 0,0 (vertical 0 == waterline)
   function scoreZone(dxMil,dyMil,yd){
     const pad=JITTER_MIL;
     const halfW=inchesToMilAtRange(IPSC.W/2,yd)+pad;
     const halfH=inchesToMilAtRange(IPSC.H/2,yd)+pad;
-    const torsoTopOffsetMil=inchesToMilAtRange(IPSC.W*0.40,yd);
-    const torsoCenterYMil=torsoTopOffsetMil - halfH + pad;
-    const lx=dxMil;
-    const ly=dyMil - torsoCenterYMil;
-    const inTorso=(Math.abs(lx)<=halfW && Math.abs(ly)<=halfH);
+
+    const inTorso=(Math.abs(dxMil)<=halfW && Math.abs(dyMil)<=halfH);
     if(!inTorso) return 'MISS';
+
     const aHalfW=inchesToMilAtRange(IPSC.A_W/2,yd)+pad*0.6;
     const aHalfH=inchesToMilAtRange(IPSC.A_H/2,yd)+pad*0.6;
-    const aTopFromTorsoTop=inchesToMilAtRange(IPSC.A_TOP,yd);
-    const aCenterY=(halfH - pad - aTopFromTorsoTop - aHalfH);
-    if(Math.abs(lx)<=aHalfW && Math.abs(ly-aCenterY)<=aHalfH) return 'A';
+
+    const aTopFromTop=inchesToMilAtRange(IPSC.A_TOP,yd);
+    const aCenterY=-halfH + aTopFromTop + aHalfH;
+
+    if(Math.abs(dxMil)<=aHalfW && Math.abs(dyMil - aCenterY)<=aHalfH) return 'A';
+
     const dInset=inchesToMilAtRange(IPSC.D,yd)-pad*0.5;
-    const nearEdge=(lx<-halfW+dInset)||(lx>halfW-dInset)||(ly>halfH-dInset)||(ly<-halfH+dInset);
+    const nearEdge=(dxMil<-halfW+dInset)||(dxMil>halfW-dInset)||(dyMil>halfH-dInset)||(dyMil<-halfH+dInset);
     if(nearEdge) return 'D';
     return 'C';
   }
 
-  // ==== Draw ====
   function draw(){
     const w=canvas.clientWidth, h=canvas.clientHeight;
     ctx.clearRect(0,0,w,h);
@@ -206,34 +224,33 @@
 
     const {pxPerUnitX,pxPerUnitY,maxHXUnits,maxVYUnits}=mapUnits(w,h);
 
-    // Reticle translation (holdover): moving DOWN adds elevation (bigger number)
+    // Reticle translation (holdover): DOWN = +elevation
     const offX = S.guessH*pxPerUnitX;
-    const offY = +(S.guessV)*pxPerUnitY;
+    const offY = S.guessV*pxPerUnitY;
 
     // Clip to scope
     ctx.save();
     ctx.beginPath(); ctx.arc(cx,cy,radius-2,0,Math.PI*2); ctx.clip();
     ctx.fillStyle='#0b0e15'; ctx.fillRect(0,0,w,h);
 
-    // Centered silhouette with cleaner upright head
+    // Torso centered at waterline (0.0 elevation) and screen center horizontally
     drawIPSC_Centered(cx, cy, pxPerUnitX, pxPerUnitY);
 
-    // Reticle (smaller view), translated by current hold
+    // Reticle translated by current hold
     ctx.save(); ctx.translate(offX,offY);
     drawReticle(cx,cy,pxPerUnitX,pxPerUnitY,maxHXUnits,maxVYUnits);
     ctx.restore();
 
-    // Wind arrow
     drawWindArrow(cx,cy,radius);
 
-    // Aim dots on center line (aim row)
+    // Truth vs your aim markers on center row
     const truthX = cx + (S.trueH*pxPerUnitX);
     const yourX  = cx + offX;
     if(S.revealed){
       ctx.setLineDash([6,6]); ctx.strokeStyle='rgba(255,255,255,0.65)'; ctx.lineWidth=1.4;
       ctx.beginPath(); ctx.moveTo(yourX,cy); ctx.lineTo(truthX,cy); ctx.stroke(); ctx.setLineDash([]);
-      dot(truthX,cy,4,'#4cd137'); // truth
-      dot(yourX, cy,4,'#ffcc00'); // your aim
+      dot(truthX,cy,4,'#4cd137');
+      dot(yourX, cy,4,'#ffcc00');
     }else{
       if(S.hintBand){
         const x1=cx + S.hintBand.min*pxPerUnitX; const x2=cx + S.hintBand.max*pxPerUnitX;
@@ -283,27 +300,24 @@
     const tx=cx+Math.cos(a)*(tipR+18), ty=cy+Math.sin(a)*(tipR+18); ctx.fillText('FROM',tx,ty);
   }
 
-  // Centered silhouette — upright head (taller than wide)
+  // Torso centered at (cx,cy) with waterline = cy
   function drawIPSC_Centered(cx,cy,pxX,pxY){
     const halfW = inchesToMilAtRange(IPSC.W/2,S.range)*pxX;
     const halfH = inchesToMilAtRange(IPSC.H/2,S.range)*pxY;
-    const topOff = inchesToMilAtRange(IPSC.W*0.40,S.range)*pxY;
-    const torsoCy = cy + (topOff - halfH);  // waterline position
-    const x=cx-halfW, y=torsoCy-halfH, w=halfW*2, h=halfH*2;
 
-    // Body
+    const x=cx-halfW, y=cy-halfH, w=halfW*2, h=halfH*2;
+
     ctx.fillStyle='#1C2029'; ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1;
     roundRect(x,y,w,h,8,true,true);
 
-    // Waterline across torso center
+    // Waterline at cy
     ctx.strokeStyle='rgba(255,255,255,0.28)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(x, torsoCy); ctx.lineTo(x+w, torsoCy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, cy); ctx.lineTo(x+w, cy); ctx.stroke();
 
-    // Head — upright rectangle (taller), centered
-    // Make head ~35% of torso width and 55% of that as width; height > width.
+    // Head (upright rectangle) above torso
     const headWidth  = Math.min(halfW*0.55, w*0.32);
-    const headHeight = headWidth * 1.3;     // taller than wide
-    const headY = y - headHeight*0.70;      // sits above torso
+    const headHeight = headWidth * 1.3;
+    const headY = y - headHeight*0.70;
     ctx.fillStyle='rgba(52,57,70,0.92)';
     roundRect(cx - headWidth/2, headY, headWidth, headHeight, 6, true, false);
     ctx.strokeStyle='rgba(255,255,255,0.25)';
@@ -312,7 +326,8 @@
     // A-zone
     const aHalfW = inchesToMilAtRange(IPSC.A_W/2,S.range)*pxX;
     const aHalfH = inchesToMilAtRange(IPSC.A_H/2,S.range)*pxY;
-    const aTop   = torsoCy - halfH + inchesToMilAtRange(IPSC.A_TOP,S.range)*pxY;
+    const torsoTopY = y;
+    const aTop   = torsoTopY + inchesToMilAtRange(IPSC.A_TOP,S.range)*pxY;
     const aCy    = aTop + aHalfH;
     ctx.strokeStyle='rgba(255,255,255,0.45)';
     ctx.strokeRect(cx-aHalfW, aCy-aHalfH, aHalfW*2, aHalfH*2);
@@ -340,14 +355,15 @@
     const centerQuiet=isMOA?1.0:0.0;
     const isMult=(v,step)=>{const m=Math.abs(v)%step;return m<eps||step-m<eps;};
 
-    // Axes
+    // Main axes
     ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.8;
     ctx.beginPath(); ctx.moveTo(cx - maxHX*pxX, cy); ctx.lineTo(cx + maxHX*pxX, cy); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - maxVY*pxY); ctx.stroke();
+
     // Center cross
     ctx.beginPath(); ctx.moveTo(cx-8,cy); ctx.lineTo(cx+8,cy); ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy+8); ctx.stroke();
 
-    // Horizontal ticks
+    // Horizontal ladder ticks
     for(let u=-maxHX; u<=maxHX+eps; u+=minorStep){
       const absu=Math.abs(u); if(isMOA && absu<=centerQuiet+eps && !isMult(absu,majorStep)) continue;
       const x=cx + u*pxX; let len=7; ctx.lineWidth=1.2; ctx.strokeStyle='rgba(255,255,255,0.9)';
@@ -394,7 +410,6 @@
       }
     }
 
-    // Unit tag
     ctx.fillStyle='rgba(225,230,240,0.95)'; ctx.font='12px ui-monospace,monospace'; ctx.textAlign='left'; ctx.textBaseline='bottom';
     ctx.fillText(units, cx - (maxHX+0.6)*pxX, cy - 10);
   }
@@ -411,10 +426,17 @@
     }
   }
 
-  // ==== Pointer/drag (drag DOWN => more elevation) ====
-  function down(e){const r=canvas.getBoundingClientRect();const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;S.drag={x,y,h:S.guessH,v:S.guessV};}
+  // Pointer/drag
+  function down(e){
+    e.preventDefault();
+    const r=canvas.getBoundingClientRect();
+    const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+    S.drag={x,y,h:S.guessH,v:S.guessV};
+  }
   function move(e){
     if(!S.drag) return;
+    e.preventDefault();
     const r=canvas.getBoundingClientRect();
     const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
     const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
@@ -426,11 +448,33 @@
     HUD.tryV.textContent=S.guessV.toFixed(1)+' '+units;
     draw();
   }
-  function up(){if(!S.drag) return; S.guessH=snap(S.guessH); S.guessV=snap(S.guessV); S.drag=null; draw();}
+  function up(){ if(!S.drag) return; S.guessH=snap(S.guessH); S.guessV=snap(S.guessV); S.drag=null; draw(); }
+
+  // Wire events
+  canvas.addEventListener('mousedown',down);
+  canvas.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',up);
+  canvas.addEventListener('touchstart',down,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
+  canvas.addEventListener('touchend',up);
+
+  // Zoom via buttons or wheel
+  BTN.magUp.onclick = ()=>{ S.mag=clamp(S.mag+1,4,24); updateHUD(); draw(); };
+  BTN.magDown.onclick = ()=>{ S.mag=clamp(S.mag-1,4,24); updateHUD(); draw(); };
+  canvas.addEventListener('wheel', (e)=>{
+    S.mag = clamp(S.mag + (e.deltaY<0?1:-1), 4, 24);
+    updateHUD(); draw();
+  }, {passive:true});
 
   BTN.reveal.onclick=reveal;
   BTN.hint.onclick=hint;
-  BTN.toggleUnits.onclick=()=>{const conv=(units==='MIL')?toMOA:toMIL; S.guessH=conv(S.guessH); S.guessV=conv(S.guessV); S.trueH=conv(S.trueH); S.trueV=conv(S.trueV); units=(units==='MIL')?'MOA':'MIL'; updateHUD(); draw();};
+  BTN.toggleUnits.onclick=()=>{
+    const conv=(units==='MIL')?toMOA:toMIL;
+    S.guessH=conv(S.guessH); S.guessV=conv(S.guessV);
+    S.trueH=conv(S.trueH); S.trueV=conv(S.trueV);
+    units=(units==='MIL')?'MOA':'MIL';
+    updateHUD(); draw();
+  };
   BTN.toggleMode.onclick=()=>{mode=(mode==='CF')?'RF':'CF'; newRound();};
   BTN.newRound.onclick=()=>{S.round=0;S.score=0;S.sumAbs=0;S.n=0;newRound();};
 
@@ -447,6 +491,7 @@
     HUD.unitsLabel.textContent=units;
     HUD.modeLabel.textContent=(mode==='CF'?'Centerfire':'Rimfire');
     HUD.round.textContent=S.round.toString();
+    HUD.magVal.textContent = `${S.mag}×`;
   }
 
   function boot(){ resize(); newRound(); }
