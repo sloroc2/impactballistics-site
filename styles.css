@@ -4,18 +4,30 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:400 16px
 a{color:var(--brand);text-decoration:none}
 a:hover{opacity:.9}
 .container{max-width:1100px;margin:0 auto;padding:28px}
-.nav{display:flex;gap:18px;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--line)}
+
+/* Header / Nav */
+.nav{display:flex;gap:18px;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .brand{display:flex;gap:12px;align-items:center}
 .brand .logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(145deg, var(--brand), var(--brand-2));filter:saturate(120%)}
-.nav a{color:var(--ink);opacity:.9}
+
+/* New: spaced nav links with wrap */
+.site-nav{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.site-nav a{color:var(--ink);opacity:.95;padding:6px 10px;border-radius:10px}
+.site-nav a:hover{background:rgba(255,255,255,0.04)}
+/* Fallback if some pages still use .nav a (until header.js is on all pages) */
+.nav a{color:var(--ink);opacity:.9;padding:6px 8px;border-radius:10px}
+.nav a:hover{background:rgba(255,255,255,0.04)}
+
 .hero{padding:40px 0}
 .h1{font-size:40px;font-weight:800;letter-spacing:.3px;margin:0 0 8px}
 .sub{color:var(--muted);margin:0}
+
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:28px 0}
 .card{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.02));border:1px solid var(--line);border-radius:18px;padding:20px}
 .card h3{margin:0 0 6px;font-size:18px}
 .card p{margin:0;color:var(--muted)}
 .cta{display:inline-block;margin-top:18px;padding:12px 18px;border-radius:999px;background:linear-gradient(145deg,var(--brand),var(--brand-2));color:#0b0f0b;font-weight:700;border:0}
+
 .footer{border-top:1px solid var(--line);margin-top:36px;padding:24px 0;color:var(--muted);font-size:14px}
 .kicker{font-weight:700;color:var(--brand);text-transform:uppercase;font-size:13px;letter-spacing:.12em}
 .section{padding:22px 0}
@@ -23,6 +35,14 @@ a:hover{opacity:.9}
 .prose p{margin:0 0 12px;color:var(--ink)}
 .prose ul{margin:8px 0 12px 22px;color:var(--muted)}
 .badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 10px;margin:6px 6px 0 0;color:var(--muted);font-size:13px}
+
 .thumb{width:100%;border-radius:16px;border:1px solid var(--line);background:#0f130f}
 .gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-@media (max-width:780px){.grid{grid-template-columns:1fr}.gallery{grid-template-columns:1fr}}
+
+/* Responsive tweaks */
+@media (max-width:780px){
+  .grid{grid-template-columns:1fr}
+  .gallery{grid-template-columns:1fr}
+  .nav{gap:12px}
+  .site-nav{gap:12px}
+}
