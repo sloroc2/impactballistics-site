@@ -5,29 +5,173 @@
 <title>Help • Impact Ballistics</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="styles.css">
+<meta name="description" content="How to use Impact Ballistics: setup, TRY/TRUE tables, wind logic (BC or GE), weather, density altitude, PDF range cards, and troubleshooting.">
 </head>
 <body>
 <header id="site-header" class="container nav"></header>
-<script src="header.js"></script>
+<script src="header.js?v=2"></script>
 
 <main class="container prose">
-  <h1>Quick Start</h1>
+
+  <h1>Help & Quick Start</h1>
+  <p class="sub">Straight answers. Do it right, hit more. If anything here doesn’t match what you see in the app, tell us and we’ll fix the app—not your expectations.</p>
+
+  <h2>Table of Contents</h2>
+  <ul>
+    <li><a href="#install">Install & First Run</a></li>
+    <li><a href="#units">Units & Defaults</a></li>
+    <li><a href="#profiles">Rifle Profiles</a></li>
+    <li><a href="#calculator">Calculator Workflow</a></li>
+    <li><a href="#trytrue">TRY / TRUE Method</a></li>
+    <li><a href="#rimfire-centerfire">Rimfire vs. Centerfire</a></li>
+    <li><a href="#wind">Wind Logic (Factory BC or GE)</a></li>
+    <li><a href="#weather">Weather, Heading, Density Altitude</a></li>
+    <li><a href="#spin">Spin Drift (Optional)</a></li>
+    <li><a href="#pdf">PDF Range Cards & Email</a></li>
+    <li><a href="#data">Data, Offline Behavior & Privacy</a></li>
+    <li><a href="#troubleshoot">Troubleshooting</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+
+  <hr>
+
+  <h2 id="install">Install & First Run</h2>
+  <ul>
+    <li>Grant permissions when asked:
+      <ul>
+        <li><strong>Location</strong>: finds nearest weather station for temp/pressure/humidity/wind/elevation.</li>
+        <li><strong>Compass/Sensors</strong>: for heading-relative wind.</li>
+      </ul>
+    </li>
+    <li>You can deny permissions and still use the app; enter weather manually if needed.</li>
+    <li>Default mode is <strong>Centerfire</strong> with dark theme. Switch anytime.</li>
+  </ul>
+
+  <h2 id="units">Units & Defaults</h2>
+  <ul>
+    <li>Pick <strong>MIL</strong> or <strong>MOA</strong>. Output is single-decimal (e.g., 1.1 MIL / 2.9 MOA).</li>
+    <li>Pick <strong>Yards</strong> or <strong>Meters</strong> — table follows your choice.</li>
+    <li>Wind units: <strong>MPH</strong> or <strong>m/s</strong>.</li>
+  </ul>
+
+  <h2 id="profiles">Rifle Profiles</h2>
+  <ul>
+    <li>Save rifles (and optional handloads). Switch fast—no bloat.</li>
+    <li>Profiles store basics for drop output; calculator also works without a saved rifle.</li>
+    <li>Your data is stored locally on your device.</li>
+  </ul>
+
+  <h2 id="calculator">Calculator Workflow</h2>
   <ol>
-    <li>Create a rifle profile and optional handload.</li>
-    <li>Open Calculator, pick MIL/MOA and units.</li>
-    <li>Pull weather (or enter manually). Lock heading if you want relative wind.</li>
-    <li>Enter TRUE corrections as you confirm drops; TRY flows downstream.</li>
+    <li>Select <strong>Centerfire</strong> or <strong>Rimfire</strong>.</li>
+    <li>Confirm <strong>units</strong> (MIL/MOA, yards/meters).</li>
+    <li>Pull <strong>weather</strong> (auto) or enter it manually.</li>
+    <li>Zero row:
+      <ul>
+        <li>Centerfire: 100 (TRY = <strong>0.0</strong>).</li>
+        <li>Rimfire: 50 (TRY = <strong>0.0</strong>).</li>
+      </ul>
+    </li>
+    <li>Work down the table. If reality differs, enter that in <strong>TRUE</strong>; downstream rows update.</li>
   </ol>
 
-  <h2>Wind</h2>
-  <p>Use local weather or manual wind. Wind Hold Trainer gives fast reps with real units.</p>
+  <h2 id="trytrue">TRY / TRUE Method</h2>
+  <p><strong>TRY</strong> = calculated hold. <strong>TRUE</strong> = what you actually needed on target.</p>
+  <ul>
+    <li>Enter your real correction in the <strong>TRUE</strong> column at any distance.</li>
+    <li>The app cascades that correction to later distances (downstream) to keep the table coherent.</li>
+    <li>Single-decimal outputs on purpose—fast to dial, easy to hold.</li>
+  </ul>
 
-  <h2>PDF / Email</h2>
-  <p>Generate a range card from the calculator screen. Works with or without a saved rifle; if a rifle is selected, details are included.</p>
+  <h2 id="rimfire-centerfire">Rimfire vs. Centerfire</h2>
+  <ul>
+    <li><strong>Centerfire</strong>
+      <ul>
+        <li>Zero at 100 fixed at TRY = 0.0.</li>
+        <li>Table: 200 → 1000 in 100-yard (or meter) steps.</li>
+      </ul>
+    </li>
+    <li><strong>Rimfire</strong>
+      <ul>
+        <li>Zero at 50 fixed at TRY = 0.0.</li>
+        <li>Table: 100 → 400 in 25-yard (or meter) steps.</li>
+        <li>Velocity-based shaping with interpolation between distances.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h2 id="wind">Wind Logic (Factory BC or GE)</h2>
+  <p>Two paths to honest wind holds. Use a factory G1 BC if you have it. If not, use <strong>GE</strong> (our mph-gun style estimator) driven by your observed corrections.</p>
+  <ul>
+    <li><strong>Factory BC (G1)</strong>
+      <ul>
+        <li>Enter BC in “Enter Factory BC or Calculate BC.”</li>
+        <li>Wind holds use BC plus your drop/time-of-flight model.</li>
+        <li>Advanced users: you can also use a “gun number” style quick-ref derived from BC.</li>
+      </ul>
+    </li>
+    <li><strong>GE (mph-gun estimation)</strong>
+      <ul>
+        <li>If BC is blank, GE estimates wind sensitivity (mph-gun) from your TRUE’d data and timing.</li>
+        <li>Lets you get solid wind calls even if published BCs are unreliable.</li>
+      </ul>
+    </li>
+  </ul>
+  <p><em>Bottom line:</em> provide a real BC when you can; otherwise, confirm a few drops and let <strong>GE</strong> learn your rifle.</p>
+
+  <h2 id="weather">Weather, Heading, Density Altitude</h2>
+  <ul>
+    <li><strong>Weather</strong>: nearest station via OpenWeather APIs; you can override manually.</li>
+    <li><strong>Heading</strong>: lock shooting direction; wind becomes relative to your muzzle, not just “north”.</li>
+    <li><strong>Density Altitude</strong>: computed from station conditions + elevation, so drops hold across temp/pressure swings.</li>
+  </ul>
+
+  <h2 id="spin">Spin Drift (Optional)</h2>
+  <ul>
+    <li>Enable to add small lateral correction at distance.</li>
+    <li>If you don’t want it, leave off—some shooters bake it into zero/holds.</li>
+  </ul>
+
+  <h2 id="pdf">PDF Range Cards & Email</h2>
+  <ul>
+    <li>Create a PDF from the calculator screen.</li>
+    <li>Works with or without a selected rifle. With a profile, details are embedded; without, you still get dope + weather.</li>
+    <li>No email client? The app falls back to a safe share/open method.</li>
+  </ul>
+
+  <h2 id="data">Data, Offline Behavior & Privacy</h2>
+  <ul>
+    <li>Your rifle/ammo/dope data stays local on your device.</li>
+    <li>No ads, no trackers, no social pixels.</li>
+    <li>Weather calls send coarse coordinates or a station/city ID—no personal identifiers, no ballistics data.</li>
+    <li>Offline? Use cached conditions or enter weather manually. Calculators still work.</li>
+  </ul>
+
+  <h2 id="troubleshoot">Troubleshooting</h2>
+  <ul>
+    <li><strong>No weather?</strong> Check location permissions or enter weather manually.</li>
+    <li><strong>Wind looks wrong?</strong> Lock heading, verify wind units (MPH vs m/s), and either enter a factory BC or shoot a couple of TRUEs so <strong>GE</strong> stabilizes.</li>
+    <li><strong>PDF won’t email?</strong> Install any email client or use the share/open fallback.</li>
+    <li><strong>Numbers feel off?</strong> Confirm mode (Rimfire vs Centerfire) and units (yards/meters, MIL/MOA). Re-enter TRUE at one verified distance; downstream rows will correct.</li>
+  </ul>
+
+  <h2 id="faq">FAQ</h2>
+  <ul>
+    <li><strong>Do I need velocity for centerfire?</strong> No. Centerfire uses a simplified, proven model keyed to real drops.</li>
+    <li><strong>Why single-decimal outputs?</strong> Faster to dial, faster to hold. Real-world speed beats false precision.</li>
+    <li><strong>Can I set a non-standard zero (e.g., 175 yards)?</strong> Yes—use the zero offset tool when enabled in settings.</li>
+    <li><strong>G7 BC?</strong> Optional. Run G1 or convert—don’t overcomplicate if you don’t need to.</li>
+  </ul>
+
+  <h2 id="contact">Contact</h2>
+  <p>Email: <a href="mailto:support@impactballisticsapp.com">support@impactballisticsapp.com</a></p>
+
 </main>
 
 <footer class="container footer">
   <div>© <span id="y"></span> Impact Ballistics.</div>
+  <div>Weather data via <a href="https://openweathermap.org/" rel="noopener">OpenWeather</a>.</div>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 </body>
