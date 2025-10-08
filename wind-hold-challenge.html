@@ -65,8 +65,17 @@
 
   let units='MIL', mode='CF';
 
-  const S={round:0,score:0,high:+(localStorage.getItem('xwind_high')||0),revealed:false,hint:false,hintBand:null,
-    sumAbs:0,n:0,range:200,wind:10,from:120,mphGun:6.0,trueV:0,trueH:0,guessV:0,guessH:0,upxX:0.02,upxY:0.02,drag:null};
+  const S={
+    round:0, score:0, high:+(localStorage.getItem('xwind_high')||0),
+    revealed:false, hint:false, hintBand:null,
+    sumAbs:0, n:0,
+    range:200, wind:10, from:120,
+    mphGun:6.0,
+    trueV:0,trueH:0,
+    guessV:0,guessH:0,
+    upxX:0.02,upxY:0.02,
+    drag:null
+  };
 
   const $=id=>document.getElementById(id);
   const HUD={wind:$('wind'),from:$('from'),range:$('range'),tryV:$('tryV'),avg:$('avg'),unitsAvg:$('unitsAvg'),
@@ -76,7 +85,7 @@
 
   const canvas=$('scope'); const ctx=canvas.getContext('2d',{alpha:true});
 
-  function toMOA(m){return m*MOA_PER_MIL} function toMIL(a){return a/MOA_PER_MIL}
+  const toMOA=m=>m*MOA_PER_MIL, toMIL=a=>a/MOA_PER_MIL;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const snap=v=>(units==='MIL'?Math.round(v*10)/10:Math.round(v*4)/4);
 
@@ -96,7 +105,12 @@
     return 2.0;
   }
   function resolveMphGun(){return (mode==='RF')?mphFromRF(1080):6.0;}
-  function windHoldMil(rYd,mph,fromDeg){const rangeKyd=rYd/1000;const s=Math.abs(Math.sin((fromDeg%360)*Math.PI/180));const sign=((fromDeg%360)<180)?1:-1;return (mph/(S.mphGun||6))*rangeKyd*s*sign;}
+  function windHoldMil(rYd,mph,fromDeg){
+    const rangeKyd=rYd/1000;
+    const s=Math.abs(Math.sin((fromDeg%360)*Math.PI/180));
+    const sign=((fromDeg%360)<180)?1:-1;
+    return (mph/(S.mphGun||6))*rangeKyd*s*sign;
+  }
   function inchesToMilAtRange(inches,yd){return inches*(1000/(yd*36));}
 
   function resize(){
@@ -116,7 +130,7 @@
     S.mphGun=resolveMphGun();
     const eMil=tryDopeMil(S.range); S.trueV=(units==='MIL')?eMil:toMOA(eMil);
     const wMil=windHoldMil(S.range,S.wind,S.from); S.trueH=(units==='MIL')?wMil:toMOA(wMil);
-    S.guessH=0; S.guessV=S.trueV;
+    S.guessH=0; S.guessV=S.trueV; // start at suggested elevation
     updateHUD(); draw();
   }
 
@@ -127,6 +141,7 @@
     const tH =(units==='MIL')?S.trueH:toMIL(S.trueH);
     const tV =(units==='MIL')?S.trueV:toMIL(S.trueV);
     const dx=hMil-tH, dy=vMil-tV;
+
     const zone=scoreZone(dx,dy,S.range);
     let pts=(zone==='A'?100:zone==='C'?70:zone==='D'?40:0); if(S.hint) pts=Math.floor(pts/2);
     S.score+=pts; S.high=Math.max(S.high,S.score); localStorage.setItem('xwind_high',String(S.high));
@@ -150,7 +165,8 @@
     const halfH=inchesToMilAtRange(IPSC.H/2,yd)+pad;
     const torsoTopOffsetMil=inchesToMilAtRange(IPSC.W*0.40,yd);
     const torsoCenterYMil=torsoTopOffsetMil - halfH + pad;
-    const lx=dxMil; const ly=dyMil - torsoCenterYMil;
+    const lx=dxMil;
+    const ly=dyMil - torsoCenterYMil;
     const inTorso=(Math.abs(lx)<=halfW && Math.abs(ly)<=halfH);
     if(!inTorso) return 'MISS';
     const aHalfW=inchesToMilAtRange(IPSC.A_W/2,yd)+pad*0.6;
@@ -173,43 +189,54 @@
 
     const {pxPerUnitX,pxPerUnitY,maxHX,maxVY}=mapUnits(w,h);
 
-    const offX=S.guessH*pxPerUnitX;
-    const offY=-(S.guessV)*pxPerUnitY; // +V is up
+    // --- Correct holdover translation ---
+    // Move the *reticle tree* DOWN by +guessV so that the "guessV" row sits on the center line.
+    const offX = S.guessH*pxPerUnitX;
+    const offY = +(S.guessV)*pxPerUnitY;   // <-- fixed sign (was negative)
 
-    // clip to scope interior
+    // Clip to scope
     ctx.save();
     ctx.beginPath(); ctx.arc(cx,cy,radius-2,0,Math.PI*2); ctx.clip();
     ctx.fillStyle='#0b0e15'; ctx.fillRect(0,0,w,h);
 
-    // 1) Silhouette FIRST (so reticle is on top and visible)
-    drawIPSC(cx,cy,pxPerUnitX,pxPerUnitY);
+    // Compute A-zone anchor from truth (target stays put)
+    const anchorX = cx + (S.trueH*pxPerUnitX);
+    const anchorY = cy - (S.trueV*pxPerUnitY);
 
-    // 2) RETICLE on TOP (higher contrast)
+    // Draw silhouette so that A-zone center == truth anchor
+    drawIPSCAnchored(anchorX, anchorY, pxPerUnitX, pxPerUnitY);
+
+    // Reticle (on top), translated so the chosen hash is at center
     ctx.save(); ctx.translate(offX,offY);
     drawReticle(cx,cy,pxPerUnitX,pxPerUnitY,maxHX,maxVY);
     ctx.restore();
 
-    // 3) Wind FROM arrow
+    // Wind arrow bezel marker
     drawWindArrow(cx,cy,radius);
 
-    // 4) Markers / hint
+    // --- Correct "your hold" aim point ---
+    // When you hold v MIL, the *aim point* is the center line after translating the tree.
+    // So plot your yellow dot at (cx + guessH, cy), not at the reticle center.
     if(S.revealed){
-      const th=S.trueH*pxPerUnitX, tv=-(S.trueV)*pxPerUnitY;
-      const gh=offX, gv=offY;
+      const th = S.trueH*pxPerUnitX;
+      const tv = -S.trueV*pxPerUnitY;
+      const gh = offX;
+      const gy = 0; // center line is the aim row
       ctx.setLineDash([6,6]); ctx.strokeStyle='rgba(255,255,255,0.65)'; ctx.lineWidth=1.4;
-      ctx.beginPath(); ctx.moveTo(cx+gh,cy+gv); ctx.lineTo(cx+th,cy+tv); ctx.stroke(); ctx.setLineDash([]);
-      dot(cx+th,cy+tv,4,'#4cd137'); dot(cx+gh,cy+gv,4,'#ffcc00');
+      ctx.beginPath(); ctx.moveTo(cx+gh,cy+gy); ctx.lineTo(cx+th,cy+tv); ctx.stroke(); ctx.setLineDash([]);
+      dot(cx+th,cy+tv,4,'#4cd137'); // truth
+      dot(cx+gh,cy+gy,4,'#ffcc00'); // your aim
     } else {
       if(S.hintBand){
         const x1=cx + S.hintBand.min*pxPerUnitX; const x2=cx + S.hintBand.max*pxPerUnitX;
         ctx.fillStyle='#8ef5b155'; ctx.fillRect(Math.min(x1,x2), cy-radius, Math.abs(x2-x1), radius*2);
       }
-      dot(cx+offX,cy+offY,4,'#8ef5b1');
+      dot(cx+offX, cy, 4, '#8ef5b1'); // show your aim at center line
     }
 
     ctx.restore();
 
-    // bezel & ladder
+    // Bezel & ladder
     drawWindRing(cx,cy,radius);
     drawLadder(cx, cy + radius + 26, w*0.86, pxPerUnitX);
   }
@@ -249,46 +276,81 @@
     const tx=cx+Math.cos(a)*(tipR+18), ty=cy+Math.sin(a)*(tipR+18); ctx.fillText('FROM',tx,ty);
   }
 
-  function drawIPSC(cx,cy,pxX,pxY){
-    const halfW=inchesToMilAtRange(IPSC.W/2,S.range)*pxX;
-    const halfH=inchesToMilAtRange(IPSC.H/2,S.range)*pxY;
-    const topOff=inchesToMilAtRange(IPSC.W*0.40,S.range)*pxY;
-    const torsoCy=cy + (topOff - halfH) + JITTER_MIL*pxY;
-    const x=cx-halfW, y=torsoCy-halfH, w=halfW*2, h=halfH*2;
+  // Draw torso so that A-zone center == (anchorX, anchorY)
+  function drawIPSCAnchored(anchorX, anchorY, pxX, pxY){
+    const halfW_mil = inchesToMilAtRange(IPSC.W/2, S.range);
+    const halfH_mil = inchesToMilAtRange(IPSC.H/2, S.range);
+    const aHalfW_mil = inchesToMilAtRange(IPSC.A_W/2, S.range);
+    const aHalfH_mil = inchesToMilAtRange(IPSC.A_H/2, S.range);
+    const aTopOffset_mil = inchesToMilAtRange(IPSC.A_TOP, S.range);
 
-    // body
-    ctx.fillStyle='#1C2029'; ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.rect(x,y,w,h); ctx.fill(); ctx.stroke();
+    const halfW_px = halfW_mil*pxX;
+    const halfH_px = halfH_mil*pxY;
+    const aHalfW_px = aHalfW_mil*pxX;
+    const aHalfH_px = aHalfH_mil*pxY;
+    const aTopOffset_px = aTopOffset_mil*pxY;
 
-    // head
-    const headW=halfW*0.55, headH=halfH*0.28, headY=y - headH*0.62;
-    ctx.fillStyle='rgba(52,57,70,0.9)'; ctx.fillRect(cx-headW,headY,headW*2,headH);
-    ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.strokeRect(cx-headW,headY,headW*2,headH);
+    // Solve torso center so A-zone center hits anchor
+    const torsoCy = anchorY + halfH_px - aTopOffset_px - aHalfH_px;
 
-    // A-zone
-    const aHalfW=inchesToMilAtRange(IPSC.A_W/2,S.range)*pxX + JITTER_MIL*0.6*pxX;
-    const aHalfH=inchesToMilAtRange(IPSC.A_H/2,S.range)*pxY + JITTER_MIL*0.6*pxY;
-    const aTop=torsoCy - halfH + inchesToMilAtRange(IPSC.A_TOP,S.range)*pxY;
-    const aCy=aTop + aHalfH;
-    ctx.strokeStyle='rgba(255,255,255,0.42)';
-    ctx.strokeRect(cx-aHalfW,aCy-aHalfH,aHalfW*2,aHalfH*2);
+    const torsoX = anchorX - halfW_px;
+    const torsoY = torsoCy - halfH_px;
+    const torsoW = halfW_px*2;
+    const torsoH = halfH_px*2;
+
+    // Body
+    ctx.fillStyle='#1C2029';
+    ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1;
+    roundRect(torsoX, torsoY, torsoW, torsoH, 8, true, true);
+
+    // Waterline across torso center
+    ctx.strokeStyle='rgba(255,255,255,0.28)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(torsoX, torsoCy); ctx.lineTo(torsoX+torsoW, torsoCy); ctx.stroke();
+
+    // A-zone box
+    const aCx = anchorX, aCy = anchorY;
+    ctx.strokeStyle='rgba(255,255,255,0.45)';
+    ctx.strokeRect(aCx - aHalfW_px, aCy - aHalfH_px, aHalfW_px*2, aHalfH_px*2);
+
+    // Head (cleaner)
+    const headW = halfW_px*0.55, headH = halfH_px*0.28;
+    const headY = torsoY - headH*0.62;
+    ctx.fillStyle='rgba(52,57,70,0.9)';
+    roundRect(aCx - headW, headY, headW*2, headH, 6, true, false);
+    ctx.strokeStyle='rgba(255,255,255,0.25)';
+    roundRect(aCx - headW, headY, headW*2, headH, 6, false, true);
+  }
+
+  function roundRect(x,y,w,h,r,fill,stroke){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr,y);
+    ctx.lineTo(x+w-rr,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+rr);
+    ctx.lineTo(x+w,y+h-rr);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-rr,y+h);
+    ctx.lineTo(x+rr,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-rr);
+    ctx.lineTo(x,y+rr);
+    ctx.quadraticCurveTo(x,y,x+rr,y);
+    if(fill) ctx.fill();
+    if(stroke) ctx.stroke();
   }
 
   function drawReticle(cx,cy,pxX,pxY,maxHX,maxVY){
     const isMOA=(units==='MOA'), eps=1e-6;
     const minorStep=isMOA?1:0.5, majorStep=1, rowStep=isMOA?2:1, rowLabelEvery=isMOA?10:1;
     const centerQuiet=isMOA?1.0:0.0;
-
     function isMult(v,step){const m=Math.abs(v)%step;return m<eps||step-m<eps;}
 
-    // axes
+    // Axes
     ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.8;
     ctx.beginPath(); ctx.moveTo(cx - maxHX*pxX, cy); ctx.lineTo(cx + maxHX*pxX, cy); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - maxVY*pxY); ctx.stroke();
-    // center cross
+    // Center cross
     ctx.beginPath(); ctx.moveTo(cx-8,cy); ctx.lineTo(cx+8,cy); ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy+8); ctx.stroke();
 
-    // horizontal scale ticks along waterline
+    // Horizontal ticks
     for(let u=-maxHX; u<=maxHX+eps; u+=minorStep){
       const absu=Math.abs(u); if(isMOA && absu<=centerQuiet+eps && !isMult(absu,majorStep)) continue;
       const x=cx + u*pxX; let len=7; ctx.lineWidth=1.2; ctx.strokeStyle='rgba(255,255,255,0.9)';
@@ -297,8 +359,7 @@
         else if(isMult(absu,5)){len=13; ctx.lineWidth=1.6;}
         else if(isMult(absu,2)){len=10;}
       }else{
-        if(isMult(absu,1)){len=12; ctx.lineWidth=1.6;}
-        else{len=6;}
+        if(isMult(absu,1)){len=12; ctx.lineWidth=1.6;} else {len=6;}
       }
       ctx.beginPath(); ctx.moveTo(x, cy-len/2); ctx.lineTo(x, cy+len/2); ctx.stroke();
       const showLabel = isMOA ? isMult(absu,10) : isMult(absu,1);
@@ -308,7 +369,7 @@
       }
     }
 
-    // rows down
+    // Rows down
     const maxRow=Math.floor(maxVY);
     for(let row=rowStep; row<=maxRow; row+=rowStep){
       const y=cy + row*pxY; const branch=maxHX*(row/maxVY);
@@ -336,7 +397,7 @@
       }
     }
 
-    // unit tag
+    // Unit tag
     ctx.fillStyle='rgba(225,230,240,0.95)'; ctx.font='12px ui-monospace,monospace'; ctx.textAlign='left'; ctx.textBaseline='bottom';
     ctx.fillText(units, cx - (maxHX+0.6)*pxX, cy - 10);
   }
@@ -353,7 +414,6 @@
     }
   }
 
-  // UI
   function updateHUD(){
     HUD.wind.textContent=S.wind.toFixed(0);
     HUD.from.textContent=S.from.toFixed(0);
@@ -369,7 +429,7 @@
     HUD.round.textContent=S.round.toString();
   }
 
-  // pointer
+  // Pointer/drag (drag DOWN => more elevation)
   function down(e){const r=canvas.getBoundingClientRect();const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;S.drag={x,y,h:S.guessH,v:S.guessV};}
   function move(e){
     if(!S.drag) return;
@@ -380,23 +440,18 @@
     const maxHX=(units==='MIL')?MAX_H_MIL:MAX_H_MIL*MOA_PER_MIL;
     const maxVY=(units==='MIL')?MAX_V_MIL:MAX_V_MIL*MOA_PER_MIL;
     S.guessH=clamp(snap(S.drag.h+dx),-maxHX,maxHX);
-    S.guessV=clamp(snap(S.drag.v - dy),0,maxVY);
+    S.guessV=clamp(snap(S.drag.v + dy),0,maxVY);  // <-- fixed (was v - dy)
     HUD.tryV.textContent=S.guessV.toFixed(1)+' '+units;
     draw();
   }
   function up(){if(!S.drag) return; S.guessH=snap(S.guessH); S.guessV=snap(S.guessV); S.drag=null; draw();}
 
-  canvas.addEventListener('mousedown',down); canvas.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
-  canvas.addEventListener('touchstart',down,{passive:true}); canvas.addEventListener('touchmove',move,{passive:true}); canvas.addEventListener('touchend',up,{passive:true});
-
-  // buttons
   BTN.reveal.onclick=reveal;
   BTN.hint.onclick=hint;
   BTN.toggleUnits.onclick=()=>{const conv=(units==='MIL')?toMOA:toMIL; S.guessH=conv(S.guessH); S.guessV=conv(S.guessV); S.trueH=conv(S.trueH); S.trueV=conv(S.trueV); units=(units==='MIL')?'MOA':'MIL'; updateHUD(); draw();};
   BTN.toggleMode.onclick=()=>{mode=(mode==='CF')?'RF':'CF'; newRound();};
   BTN.newRound.onclick=()=>{S.round=0;S.score=0;S.sumAbs=0;S.n=0;newRound();};
 
-  // boot — ensure canvas is sized before first paint
   function boot(){ resize(); newRound(); }
   boot();
 })();
