@@ -1,22 +1,75 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Impact Fuzion</title>
-  <meta name="description" content="Impact Fuzion — match-grade ballistic calculator. Centerfire to 1,000 yds; rimfire .22LR to 400 yds.">
-  <style>
-    body{margin:0;background:#0b0d10;color:#e6edf3;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    .wrap{max-width:980px;margin:0 auto;padding:40px 20px}
-    a{color:#59b7ff;text-decoration:none}a:hover{text-decoration:underline}
-    h1{margin:0 0 10px;font-size:2rem}
-    p{color:#9aa3ad}.nav a{margin-right:14px}
-  </style>
+<meta charset="utf-8">
+<title>Impact Ballistics App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="https://www.impactballisticsapp.com/">
+<link rel="stylesheet" href="styles.css">
+<meta name="description" content="Impact Ballistics — clean dope tables, wind holds, density altitude, and range cards. Built by shooters, for shooters.">
+<meta property="og:title" content="Impact Ballistics App">
+<meta property="og:description" content="Clean dope tables, wind holds, and a wind-hold trainer.">
+<meta property="og:type" content="website">
 </head>
 <body>
-  <div class="wrap">
-    <h1>Impact Fuzion</h1>
-    <p>Precision ballistics. Centerfire to 1,000 yds; rimfire .22LR to 400 yds.</p>
-    <div class="nav"><a href="/privacy">Privacy Policy</a> · <a href="mailto:impactballistics@mail.com">Contact</a></div>
+<header class="container nav">
+  <div class="brand">
+    <div class="logo"></div>
+    <strong>Impact Ballistics</strong>
   </div>
+  <nav>
+    <a href="/">Home</a>
+    <a href="help.html">Help</a>
+    <a href="screenshots.html">Screenshots</a>
+    <a href="legal.html">Legal</a>
+    <a href="privacy.html">Privacy</a>
+  </nav>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div class="kicker">For shooters, by shooters</div>
+    <h1 class="h1">Fast, clean ballistics that don’t get in your way</h1>
+    <p class="sub">TRY/TRUE tables, weather-aware wind, density altitude, and a Wind Hold Trainer to sharpen calls.</p>
+    <a class="cta" href="help.html">Read the Quick Start</a>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h3>Rifle Profiles</h3>
+      <p>Save rifles and handloads. Switch fast. Nothing bloated.</p>
+    </div>
+    <div class="card">
+      <h3>Calculator</h3>
+      <p>100-to-1000 centerfire, 50-to-400 rimfire. TRY/TRUE with one-decimal outputs.</p>
+    </div>
+    <div class="card">
+      <h3>Weather & DA</h3>
+      <p>Local station data and density altitude to keep drops honest.</p>
+    </div>
+    <div class="card">
+      <h3>Wind Hold Trainer</h3>
+      <p>Reps on demand. Learn your rifle’s wind in real units, not guesses.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="kicker">Highlights</div>
+    <div class="badge">MIL / MOA</div>
+    <div class="badge">Yards / Meters</div>
+    <div class="badge">Spin Drift option</div>
+    <div class="badge">PDF Range Cards</div>
+    <div class="badge">Offline-friendly</div>
+  </section>
+</main>
+
+<footer class="container footer">
+  <div>© <span id="y"></span> Impact Ballistics. All rights reserved.</div>
+  <div>Weather data via <a href="https://openweathermap.org/" rel="noopener">OpenWeather</a> APIs. See <a href="privacy.html">Privacy</a>.</div>
+</footer>
+
+<script>
+document.getElementById('y').textContent = new Date().getFullYear();
+</script>
 </body>
 </html>
