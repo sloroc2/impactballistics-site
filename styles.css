@@ -46,3 +46,26 @@ a:hover{opacity:.9}
   .nav{gap:12px}
   .site-nav{gap:12px}
 }
+/* --- Site-wide watermark (root image), hidden on screenshots page --- */
+body::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: url("second_logo.png") no-repeat center 35%;
+  background-size: 520px auto;   /* adjust size if you want */
+  opacity: .08;                   /* transparency */
+  filter: saturate(110%);
+}
+
+/* keep real content above the watermark */
+.nav, main, footer { position: relative; z-index: 1; }
+
+/* turn the watermark off where you don't want it */
+body.screenshots::before { content: none; }
+
+/* optional: scale down on smaller screens */
+@media (max-width: 780px){
+  body::before{ background-size: 380px auto; background-position: center 40%; }
+}
