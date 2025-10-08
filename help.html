@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Help • Impact Ballistics</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="container nav">
+  <div class="brand"><div class="logo"></div><strong>Impact Ballistics</strong></div>
+  <nav><a href="/">Home</a><a href="screenshots.html">Screenshots</a></nav>
+</header>
+
+<main class="container prose">
+  <h1>Quick Start</h1>
+  <ol>
+    <li>Create a rifle profile and optional handload.</li>
+    <li>Open Calculator, pick MIL/MOA and units.</li>
+    <li>Pull weather (or enter manually). Lock heading if you want relative wind.</li>
+    <li>Enter TRUE corrections as you confirm drops; TRY flows downstream.</li>
+  </ol>
+
+  <h2>Wind</h2>
+  <p>Use local weather or manual wind. Wind Hold Trainer gives fast reps with real units.</p>
+
+  <h2>PDF / Email</h2>
+  <p>Generate a range card from the calculator screen. Works with or without a saved rifle; if a rifle is selected, details are included.</p>
+</main>
+
+<footer class="container footer">
+  <div>© <span id="y"></span> Impact Ballistics.</div>
+</footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+</body>
+</html>
