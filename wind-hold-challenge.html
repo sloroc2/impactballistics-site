@@ -8,22 +8,32 @@
   :root{
     --bg:#0f1116; --ink:#e7e9ef; --muted:#a5adbd; --line:#232a3a;
     --chipBg:#0f1422; --chipBd:#253047; --accent:#8ef5b1; --danger:#ff8d8d; --primary:#0A84FF;
-    /* Scope diameter: tweak this to taste */
-    --scope-d: clamp(280px, 42vw, 520px);
+    /* Scope diameter */
+    --scope-d: clamp(300px, 46vw, 560px);
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 
-  /* Site header host (filled by your shared script) */
-  #site-header{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid var(--line);background:#0d121e}
-  #site-header .site-nav a{color:var(--muted);text-decoration:none;margin:0 10px}
-  #site-header .site-nav a.active{color:var(--ink);font-weight:700}
-
-  /* HUD */
+  /* ===== Header (provided) ===== */
+  header.container.nav{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px; height:56px; padding:0 14px; background:#0d121e; border-bottom:1px solid var(--line);
+  }
+  header .brand{display:flex; align-items:center; gap:10px; font-weight:800}
+  header .logo{
+    width:28px; height:28px; border-radius:6px;
+    background: linear-gradient(135deg,#1b2440 0%,#273356 60%,#2d3a64 100%);
+    box-shadow: 0 0 0 1px #1e2740 inset, 0 4px 10px rgba(0,0,0,.35);
+  }
+  header nav a{
+    color:var(--muted); text-decoration:none; margin-left:14px; font-weight:600;
+  }
+  header nav a:hover{color:var(--ink)}
+  /* ===== HUD ===== */
   .hud{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#0b101a}
   .chip{background:var(--chipBg);border:1px solid var(--chipBd);border-radius:10px;padding:8px 10px;white-space:nowrap}
 
-  /* Controls */
+  /* ===== Controls ===== */
   .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:10px 12px}
   .btn{background:#0e1626;border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer}
   .btn.primary{background:#0f1c16;border-color:#214636;color:var(--accent)}
@@ -31,16 +41,16 @@
   .btn.toggle-on{box-shadow:0 0 0 1px #2f855a inset;color:#b3ffd1}
   .btn:disabled{opacity:.6;cursor:not-allowed}
 
-  /* Stage layout */
+  /* ===== Stage / Scope ===== */
   .stage{display:grid;place-items:center;padding:18px}
   .scope-wrap{
     position:relative;width:var(--scope-d);height:var(--scope-d);
     border-radius:9999px;overflow:hidden;
-    /* Bezel ring look */
+    /* Bezel ring */
     box-shadow:
       0 0 0 3px #0a0f19 inset,
       0 0 0 10px #151c2a inset,
-      0 10px 30px rgba(0,0,0,0.5);
+      0 12px 34px rgba(0,0,0,0.55);
     background:#0b1018;
   }
   canvas#scope{
@@ -48,14 +58,13 @@
   }
   /* glass glare */
   .scope-wrap::after{
-    content:""; position:absolute; inset:0; pointer-events:none;
+    content:""; position:absolute; inset:0; pointer-events:none; border-radius:9999px;
     background:
       radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.05), transparent 40%),
       radial-gradient(circle at 50% 50%, rgba(0,0,0,0.35), transparent 55%);
-    border-radius:9999px;
   }
 
-  /* Modal shells */
+  /* ===== Modals ===== */
   .modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:30}
   .modal{background:#0e1422;border:1px solid var(--line);border-radius:12px;min-width:300px;max-width:92vw;padding:14px}
   .modal h3{margin:0 0 8px 0}
@@ -65,8 +74,11 @@
 </head>
 <body>
 
-  <!-- Site header placeholder: your script populates this -->
-  <div id="site-header"></div>
+  <!-- Header (your markup) -->
+  <header class="container nav">
+    <div class="brand"><div class="logo"></div><strong>Impact Ballistics</strong></div>
+    <nav><a href="/">Home</a><a href="help.html">Help</a></nav>
+  </header>
 
   <!-- HUD -->
   <div class="hud" id="hud">
@@ -267,8 +279,9 @@
 
     // Clip to circular scope
     ctx.save();
+    const radius = Math.min(CX, CY);
     ctx.beginPath();
-    ctx.arc(CX, CY, Math.min(CX, CY), 0, Math.PI*2);
+    ctx.arc(CX, CY, radius, 0, Math.PI*2);
     ctx.clip();
 
     // Background inside scope (dark glass)
@@ -285,6 +298,9 @@
     ctx.translate(offX, offY);
     drawTreeReticleDownOnly(CX, CY, ppuX, ppuY);
     ctx.restore();
+
+    // Degree compass + HALF/FULL and wind arrow (inside rim)
+    drawCompassWindWithLabels(CX, CY, radius - 6);
 
     // Reveal markers
     if (revealed) {
@@ -303,14 +319,97 @@
       ctx.moveTo(truth.x,truth.y-10); ctx.lineTo(truth.x,truth.y+10); ctx.stroke();
     }
 
-    // Vignette inside clip (extra depth)
-    const grd = ctx.createRadialGradient(CX, CY, Math.min(CX, CY)*0.6, CX, CY, Math.min(CX, CY));
+    // Vignette inside clip (depth)
+    const grd = ctx.createRadialGradient(CX, CY, radius*0.6, CX, CY, radius);
     grd.addColorStop(0, 'rgba(0,0,0,0)');
     grd.addColorStop(1, 'rgba(0,0,0,0.4)');
     ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
 
     ctx.restore(); // end circular clip
   }
+
+  // ---- Compass + HALF/FULL + Wind Arrow ----
+  function drawCompassWindWithLabels(cx, cy, r){
+    const ringColor = 'rgba(255,255,255,0.55)';
+    const numColor  = 'rgba(255,255,255,0.92)';
+    const noteColor = 'rgba(255,255,255,0.85)';
+    const tickShort = 6, tickLong = 10;
+
+    // Outer ring
+    ctx.strokeStyle = ringColor; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+
+    // Ticks + numerals every 30°
+    for (let deg=0; deg<360; deg+=15){
+      const a = screenAngleFromFromDeg(deg);
+      const xd = Math.cos(a), yd = Math.sin(a);
+      const inner = r - (deg%30===0 ? tickLong : tickShort);
+      ctx.beginPath();
+      ctx.moveTo(cx + xd*inner, cy + yd*inner);
+      ctx.lineTo(cx + xd*r,     cy + yd*r);
+      ctx.stroke();
+
+      if (deg%30===0){
+        ctx.fillStyle = numColor;
+        ctx.font = '12px ui-monospace,monospace';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        const lx = cx + xd*(r-18), ly = cy + yd*(r-18);
+        ctx.fillText(String(deg), lx, ly);
+      }
+    }
+
+    // HALF labels at 30/150/210/330
+    [30,150,210,330].forEach(d=>{
+      const a = screenAngleFromFromDeg(d);
+      const x = cx + Math.cos(a)*(r-28);
+      const y = cy + Math.sin(a)*(r-28);
+      ctx.fillStyle=noteColor; ctx.font='11px ui-monospace,monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('HALF', x, y);
+    });
+
+    // FULL labels at 90/270
+    [90,270].forEach(d=>{
+      const a = screenAngleFromFromDeg(d);
+      const x = cx + Math.cos(a)*(r-28);
+      const y = cy + Math.sin(a)*(r-28);
+      ctx.fillStyle=noteColor; ctx.font='11px ui-monospace,monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('FULL', x, y);
+    });
+
+    // Wind FROM arrow (inward)
+    const spd = Math.max(2, Math.min(20, windMph));
+    const shaftW = 2 + (spd-2)/18*2;       // 2..4 px
+    const headLen = 10 + (spd-2)/18*8;     // 10..18 px
+    const a = screenAngleFromFromDeg(windFrom);
+    const baseR = r - 4;
+    const tipR  = Math.max(12, r - 34 - headLen); // keep a gap near center
+
+    const bx = cx + Math.cos(a)*baseR, by = cy + Math.sin(a)*baseR;
+    const tx = cx + Math.cos(a)*tipR,  ty = cy + Math.sin(a)*tipR;
+
+    // shadow
+    ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=shaftW+1; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(bx+1,by+1); ctx.lineTo(tx+1,ty+1); ctx.stroke();
+    // shaft
+    ctx.strokeStyle='rgba(142,245,177,0.85)'; ctx.lineWidth=shaftW; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(tx,ty); ctx.stroke();
+    // head
+    const inward = a + Math.PI;
+    const lx = tx + Math.cos(inward+0.45)*headLen, ly = ty + Math.sin(inward+0.45)*headLen;
+    const rx = tx + Math.cos(inward-0.45)*headLen, ry = ty + Math.sin(inward-0.45)*headLen;
+    ctx.fillStyle='rgba(142,245,177,0.35)'; ctx.strokeStyle='rgba(142,245,177,0.9)'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(lx,ly); ctx.lineTo(rx,ry); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // FROM tag
+    ctx.fillStyle='rgba(165,173,189,0.95)'; ctx.font='12px ui-monospace,monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const tagX = cx + Math.cos(a)*(baseR+16), tagY = cy + Math.sin(a)*(baseR+16);
+    ctx.fillText('FROM', tagX, tagY);
+  }
+
+  // Meteorological FROM (0° at 12 o’clock, CW) → canvas angle (0 rad = +x, CCW)
+  const screenAngleFromFromDeg = deg => ((deg - 90) * Math.PI / 180);
 
   function drawIPSCAligned(cx, cy, ppuX, ppuY){
     const inchMil = inch => inchesToMilAtRange(inch, rangeYds);
@@ -320,7 +419,6 @@
     const top = cy - h*waterFrac;
     const left = cx - w/2;
 
-    // body path with head cap
     const path = new Path2D();
     roundedRectPath(path, left, top, w, h, 10);
     // head slab
@@ -334,11 +432,10 @@
     path.lineTo(hx0, top+0.5);
     path.closePath();
 
-    // fill + subtle highlight
     ctx.fillStyle = '#1C2029'; ctx.fill(path);
     ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1.4; ctx.stroke(path);
 
-    // faint guides
+    // A-zone and D guides
     const aW = inchMil(IPSC.A_W)*ppuX, aH = inchMil(IPSC.A_H)*ppuY;
     const aTop = top + inchMil(IPSC.A_TOP)*ppuY;
     dashedRect(cx-aW/2, aTop, aW, aH, 'rgba(255,255,255,0.10)');
@@ -417,7 +514,7 @@
       }
     }
 
-    // Unit tag (top-left of center line)
+    // Unit tag
     ctx.fillStyle='rgba(225,230,240,0.95)'; ctx.font='12px ui-monospace,monospace';
     ctx.textAlign='left'; ctx.textBaseline='bottom';
     ctx.fillText(units, cx - (maxHX + 0.6) * ppuX, cy - 10);
@@ -566,9 +663,6 @@
   newRound();
 })();
 </script>
-
-<!-- Your existing shared header + watermark scripts should be included site-wide.
-     This page assumes they run and populate #site-header. -->
 
 </body>
 </html>
