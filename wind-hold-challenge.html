@@ -2,109 +2,95 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Wind Hold Challenge • Impact Ballistics</title>
+<title>Wind Hold Trainer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   :root{
     --bg:#0f1116; --ink:#e7e9ef; --muted:#a5adbd; --line:#232a3a;
-    --chipBg:#0f1422; --chipBd:#253047; --accent:#8ef5b1; --danger:#ff8d8d;
+    --chipBg:#0f1422; --chipBd:#253047; --accent:#8ef5b1; --danger:#ff8d8d; --primary:#0A84FF;
+    /* Scope diameter: tweak this to taste */
+    --scope-d: clamp(280px, 42vw, 520px);
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);
-    font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 
-  /* Site header host (content injected by your shared script) */
-  #site-header{position:sticky;top:0;z-index:40;background:#0b0f18;border-bottom:1px solid var(--line)}
-  #site-header .brand{display:flex;gap:8px;align-items:center;padding:10px 12px}
-  #site-header .site-nav{display:flex;gap:14px;padding:0 12px 10px 12px}
-  #site-header .site-nav a{color:var(--muted);text-decoration:none;font-weight:600}
-  #site-header .site-nav a.active{color:var(--ink)}
+  /* Site header host (filled by your shared script) */
+  #site-header{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid var(--line);background:#0d121e}
+  #site-header .site-nav a{color:var(--muted);text-decoration:none;margin:0 10px}
+  #site-header .site-nav a.active{color:var(--ink);font-weight:700}
 
-  /* Page frame */
-  .wrap{display:grid;grid-template-rows:min-content min-content 1fr min-content;min-height:100svh}
+  /* HUD */
   .hud{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#0b101a}
   .chip{background:var(--chipBg);border:1px solid var(--chipBd);border-radius:10px;padding:8px 10px;white-space:nowrap}
 
-  /* Scope shell (circular viewport) */
-  .stage{display:grid;place-items:center;padding:14px 12px}
-  .scope-shell{
-    position:relative; width:min(92vw,560px); aspect-ratio:1/1; border-radius:50%;
-    background:radial-gradient(120% 120% at 30% 30%, #0a0d14 0%, #06080d 60%, #04060a 100%);
-    border:8px solid #1c2435; box-shadow:
-      0 0 0 2px #0a0d14 inset,
-      0 0 0 10px #101725 inset,
-      0 18px 40px rgba(0,0,0,.55);
-    overflow:hidden; /* this clips the canvas to a circle */
-  }
-  .scope-shell::after{
-    /* inner vignette on the glass */
-    content:""; position:absolute; inset:0; pointer-events:none;
-    background:
-      radial-gradient(80% 80% at 50% 50%,
-        rgba(0,0,0,0) 55%,
-        rgba(0,0,0,.18) 78%,
-        rgba(0,0,0,.40) 100%);
-  }
-  /* Subtle glass glare */
-  .scope-shell::before{
-    content:""; position:absolute; inset:0; pointer-events:none;
-    background:radial-gradient(60% 35% at 25% 20%,
-      rgba(255,255,255,.10) 0%,
-      rgba(255,255,255,.03) 35%,
-      rgba(255,255,255,0) 60%);
-    mix-blend-mode:screen;
-  }
-
-  canvas{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:crosshair}
-
-  /* Footer (controls) */
-  .footer{display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;padding:10px 12px;border-top:1px solid var(--line);background:#0b101a}
-  .btn{
-    background:#0e1626;border:1px solid var(--line);color:var(--ink);
-    padding:10px 12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;user-select:none
-  }
+  /* Controls */
+  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:10px 12px}
+  .btn{background:#0e1626;border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer}
   .btn.primary{background:#0f1c16;border-color:#214636;color:var(--accent)}
   .btn.warn{background:#1d1414;border-color:#3b2323;color:var(--danger)}
   .btn.toggle-on{box-shadow:0 0 0 1px #2f855a inset;color:#b3ffd1}
   .btn:disabled{opacity:.6;cursor:not-allowed}
 
-  /* Modal */
-  .modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50}
+  /* Stage layout */
+  .stage{display:grid;place-items:center;padding:18px}
+  .scope-wrap{
+    position:relative;width:var(--scope-d);height:var(--scope-d);
+    border-radius:9999px;overflow:hidden;
+    /* Bezel ring look */
+    box-shadow:
+      0 0 0 3px #0a0f19 inset,
+      0 0 0 10px #151c2a inset,
+      0 10px 30px rgba(0,0,0,0.5);
+    background:#0b1018;
+  }
+  canvas#scope{
+    position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;
+  }
+  /* glass glare */
+  .scope-wrap::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.05), transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(0,0,0,0.35), transparent 55%);
+    border-radius:9999px;
+  }
+
+  /* Modal shells */
+  .modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:30}
   .modal{background:#0e1422;border:1px solid var(--line);border-radius:12px;min-width:300px;max-width:92vw;padding:14px}
   .modal h3{margin:0 0 8px 0}
   .row{display:flex;gap:8px;align-items:center;margin:4px 0}
-  .row .icon{opacity:.9}
   .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
 </style>
 </head>
 <body>
-  <!-- Your shared header script populates this -->
+
+  <!-- Site header placeholder: your script populates this -->
   <div id="site-header"></div>
 
-  <div class="wrap">
-    <!-- HUD -->
-    <div class="hud">
-      <div class="chip" id="chipWind">💨 Wind: — mph FROM —°</div>
-      <div class="chip" id="chipRange">📏 Range: — yds</div>
-      <div class="chip" id="chipTry">⬇️ Try DOPE: —</div>
-      <div class="chip" id="chipAvg">📈 Avg: 0.0 — (0/10)</div>
-      <div class="chip" id="chipScore">🎯 Score: 0 • High: 0</div>
-      <div class="chip" id="chipPB">🏅 PB Avg: —</div>
-    </div>
+  <!-- HUD -->
+  <div class="hud" id="hud">
+    <div class="chip" id="chipWind">💨 Wind: — mph FROM —°</div>
+    <div class="chip" id="chipRange">📏 Range: — yds</div>
+    <div class="chip" id="chipTry">⬇️ Try DOPE: —</div>
+    <div class="chip" id="chipAvg">📈 Avg: 0.0 — (0/10)</div>
+    <div class="chip" id="chipScore">🎯 Score: 0 • High: 0</div>
+    <div class="chip" id="chipPB">🏅 PB Avg: —</div>
+  </div>
 
-    <!-- Circular scope viewport -->
-    <div class="stage">
-      <div class="scope-shell">
-        <canvas id="scope"></canvas>
-      </div>
-    </div>
+  <!-- Controls -->
+  <div class="controls">
+    <button id="btnUnits" class="btn">MIL (0.1)</button>
+    <button id="btnSpin"  class="btn">Spin: Off</button>
+    <button id="btnNew"   class="btn warn">New Session</button>
+    <button id="btnHint"  class="btn">💡 Hint (−50%)</button>
+    <button id="btnReveal" class="btn primary">👁️ Reveal</button>
+  </div>
 
-    <!-- Controls -->
-    <div class="footer">
-      <button id="btnHint" class="btn">💡 Hint (−50%)</button>
-      <button id="btnReveal" class="btn primary">👁️ Reveal</button>
-      <button id="btnUnits" class="btn">MIL (0.1)</button>
-      <button id="btnSpin" class="btn">Spin: Off</button>
+  <!-- Scope view -->
+  <div class="stage">
+    <div class="scope-wrap">
+      <canvas id="scope"></canvas>
     </div>
   </div>
 
@@ -112,17 +98,17 @@
   <div id="modal" class="modalWrap">
     <div class="modal">
       <h3>Round Results</h3>
-      <div class="row"><span class="icon">📏</span><span id="mRange">Range: —</span></div>
-      <div class="row"><span class="icon">🏳️</span><span id="mWind">Wind: —</span></div>
-      <hr style="border-color:var(--line);border-style:solid;border-width:1px 0 0;opacity:.6;margin:8px 0">
-      <div class="row"><span class="icon">🎯</span><span id="mYour">Your: —</span></div>
-      <div class="row"><span class="icon">✅</span><span id="mTrue">True: —</span></div>
-      <hr style="border-color:var(--line);border-style:solid;border-width:1px 0 0;opacity:.6;margin:8px 0">
-      <div class="row"><span class="icon">📐</span><span id="mErr">Error: —</span></div>
-      <div class="row"><span class="icon">🏆</span><span id="mPts">Points: —</span></div>
-      <div class="row"><span class="icon">🧮</span><span id="mAvg">Round — / Avg —</span></div>
+      <div class="row"><span>📏</span><span id="mRange">Range: —</span></div>
+      <div class="row"><span>🏳️</span><span id="mWind">Wind: —</span></div>
+      <hr style="border-color:var(--line);opacity:.6;margin:8px 0">
+      <div class="row"><span>🎯</span><span id="mYour">Your: —</span></div>
+      <div class="row"><span>✅</span><span id="mTrue">True: —</span></div>
+      <hr style="border-color:var(--line);opacity:.6;margin:8px 0">
+      <div class="row"><span>📐</span><span id="mErr">Error: —</span></div>
+      <div class="row"><span>🏆</span><span id="mPts">Points: —</span></div>
+      <div class="row"><span>🧮</span><span id="mAvg">Round — / Avg —</span></div>
       <div class="modal-actions">
-        <button id="btnNext" class="btn">Next Round</button>
+        <button id="btnNext" class="btn primary">Next Round</button>
       </div>
     </div>
   </div>
@@ -131,11 +117,11 @@
   <div id="hintModal" class="modalWrap">
     <div class="modal">
       <h3>Wind Hint</h3>
-      <div class="row"><span class="icon">🏳️</span><span id="hMeta">FROM —° • — mph • —</span></div>
-      <div class="row"><span class="icon">📏</span><span id="hFull">Full-value @ — yd: — MIL</span></div>
-      <hr style="border-color:var(--line);border-style:solid;border-width:1px 0 0;opacity:.6;margin:8px 0">
-      <div class="row"><span class="icon">➡️</span><span id="hStart">Start: —</span></div>
-      <div style="font-size:12px;color:var(--muted);margin-top:6px">
+      <div class="row"><span>🏳️</span><span id="hMeta">FROM —° • — mph • —</span></div>
+      <div class="row"><span>📏</span><span id="hFull">Full-value @ — yd: — MIL</span></div>
+      <hr style="border-color:var(--line);opacity:.6;margin:8px 0">
+      <div class="row"><span>➡️</span><span id="hStart">Start: —</span></div>
+      <div style="font-size:12px;color:#a5adbd;margin-top:6px">
         Rule: (10/6) × wind/10 × range/1000 × sin(from°)
       </div>
       <div style="font-size:12px;color:#ff9b9b;margin-top:4px">
@@ -149,239 +135,223 @@
 
 <script>
 (() => {
-  // ====== Core constants (mirrors Dart) ======
+  // ===== Constants (match Dart) =====
   const MOA_PER_MIL = 3.43774677;
   const MAX_H_MIL = 6.0, MAX_V_MIL = 12.0;
   const MARGIN_PX = 12.0, MAP_CUSHION_UNITS = 0.5;
-  const WIND_SCALE = 1.6667;       // 10/6
-  const JITTER_PAD_MIL = 0.12;     // mobile jitter fairness
+  const WIND_SCALE = 1.6667;
+  const JITTER_PAD_MIL = 0.12;
 
   const IPSC = { W:18, H:30, A_W:6, A_H:11, A_TOP:4, D:3 };
-  const RANGE_PTS=[100,200,300,400,500,600,700,800,900,1000];
-  const DOPE_MIL =[0.0,0.5,1.1,1.9,3.0,4.2,5.6,7.1,8.8,10.6];
+  const RANGE_PTS = [100,200,300,400,500,600,700,800,900,1000];
+  const DOPE_MIL  = [0.0,0.5,1.1,1.9,3.0,4.2,5.6,7.1,8.8,10.6];
 
-  // ====== State ======
-  const ANGLE={MIL:'MIL', MOA:'MOA'};
-  let units=ANGLE.MIL, includeSpin=false;
+  // ===== State =====
+  const ANGLE = { MIL:'MIL', MOA:'MOA' };
+  let units = ANGLE.MIL;
+  let includeSpin = false;
+  let rangeYds = 600, windMph = 10, windFrom = 120;
+  let trueWindHold = 0, trueElev = 0;
+  let guessH = 0, guessV = 0;
+  let revealed = false, hintUsed = false;
 
-  let rangeYds=600, windMph=10, windFrom=120;
-  let trueWindHold=0, trueElev=0;  // current units
-  let guessH=0, guessV=0;
-  let revealed=false, hintUsed=false;
+  const ROUNDS = 10; let completed = 0, sumErrUnits = 0, sessionScore = 0, lastPoints = 0, lastZone = 'Miss';
+  const LS_BEST_MIL='xwind_best_avg_mil', LS_BEST_MOA='xwind_best_avg_moa', LS_HIGH='xwind_highscore';
+  const bestAvgMil = parseFloat(localStorage.getItem(LS_BEST_MIL) || 'NaN');
+  const bestAvgMoa = parseFloat(localStorage.getItem(LS_BEST_MOA) || 'NaN');
+  let highScore = parseInt(localStorage.getItem(LS_HIGH) || '0',10);
 
-  const ROUNDS=10;
-  let completed=0, sumErrUnits=0, sessionScore=0, lastPoints=0, lastZone='Miss';
+  // ===== Canvas mapping =====
+  const canvas = document.getElementById('scope');
+  const ctx = canvas.getContext('2d');
+  let W=0,H=0,CX=0,CY=0, unitsPerPxX=0.02, unitsPerPxY=0.02;
 
-  const LS_BEST_MIL='xwind_best_avg_mil';
-  const LS_BEST_MOA='xwind_best_avg_moa';
-  const LS_HIGH='xwind_highscore';
-  const bestAvgMil=parseFloat(localStorage.getItem(LS_BEST_MIL) || 'NaN');
-  const bestAvgMoa=parseFloat(localStorage.getItem(LS_BEST_MOA) || 'NaN');
-  let highScore=parseInt(localStorage.getItem(LS_HIGH) || '0',10);
+  // ===== UI =====
+  const $ = id => document.getElementById(id);
+  const $chipWind=$('chipWind'), $chipRange=$('chipRange'), $chipTry=$('chipTry'), $chipAvg=$('chipAvg'), $chipScore=$('chipScore'), $chipPB=$('chipPB');
+  const $btnUnits=$('btnUnits'), $btnSpin=$('btnSpin'), $btnNew=$('btnNew'), $btnHint=$('btnHint'), $btnReveal=$('btnReveal');
+  const $modal=$('modal'), $mRange=$('mRange'), $mWind=$('mWind'), $mYour=$('mYour'), $mTrue=$('mTrue'), $mErr=$('mErr'), $mPts=$('mPts'), $mAvg=$('mAvg'), $btnNext=$('btnNext');
+  const $hintModal=$('hintModal'), $hMeta=$('hMeta'), $hFull=$('hFull'), $hStart=$('hStart'), $btnHintClose=$('btnHintClose');
 
-  // ====== DOM ======
-  const canvas=document.getElementById('scope');
-  const ctx=canvas.getContext('2d');
-
-  const $chipWind  = document.getElementById('chipWind');
-  const $chipRange = document.getElementById('chipRange');
-  const $chipTry   = document.getElementById('chipTry');
-  const $chipAvg   = document.getElementById('chipAvg');
-  const $chipScore = document.getElementById('chipScore');
-  const $chipPB    = document.getElementById('chipPB');
-
-  const $btnHint   = document.getElementById('btnHint');
-  const $btnReveal = document.getElementById('btnReveal');
-  const $btnUnits  = document.getElementById('btnUnits');
-  const $btnSpin   = document.getElementById('btnSpin');
-
-  const $modal     = document.getElementById('modal');
-  const $mRange    = document.getElementById('mRange');
-  const $mWind     = document.getElementById('mWind');
-  const $mYour     = document.getElementById('mYour');
-  const $mTrue     = document.getElementById('mTrue');
-  const $mErr      = document.getElementById('mErr');
-  const $mPts      = document.getElementById('mPts');
-  const $mAvg      = document.getElementById('mAvg');
-  const $btnNext   = document.getElementById('btnNext');
-
-  const $hintModal = document.getElementById('hintModal');
-  const $hMeta     = document.getElementById('hMeta');
-  const $hFull     = document.getElementById('hFull');
-  const $hStart    = document.getElementById('hStart');
-  const $btnHintClose = document.getElementById('btnHintClose');
-
-  // ====== Mapping ======
-  let W=0,H=0,CX=0,CY=0;
-  let unitsPerPxX=0.02, unitsPerPxY=0.02;
-
-  const toMOA = mil => mil * MOA_PER_MIL;
-  const toMIL = moa => moa / MOA_PER_MIL;
+  // ===== Helpers =====
+  const toMOA = m => m * MOA_PER_MIL, toMIL = a => a / MOA_PER_MIL;
   const oneDec = v => Number(v).toFixed(1);
-  const step = () => (units===ANGLE.MIL ? 0.1 : 0.25);
+  const step = () => (units===ANGLE.MIL?0.1:0.25);
   const snap = v => Math.round(v/step())*step();
   const uTag = () => units;
-  const dirH = v => `${oneDec(Math.abs(v))} ${v >= 0 ? 'RIGHT' : 'LEFT'}`;
-  const dirV = v => `${oneDec(Math.abs(v))} ${v >= 0 ? 'UP' : 'DOWN'}`;
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const dirH = v => `${oneDec(Math.abs(v))} ${v>=0?'RIGHT':'LEFT'}`;
+  const dirV = v => `${oneDec(Math.abs(v))} ${v>=0?'UP':'DOWN'}`;
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 
   function fitCanvas(){
-    const dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
-    const r=canvas.getBoundingClientRect();
-    canvas.width=Math.floor(r.width*dpr);
-    canvas.height=Math.floor(r.height*dpr);
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    canvas.width = Math.floor(r.width * dpr);
+    canvas.height= Math.floor(r.height * dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
     W=r.width; H=r.height; CX=W/2; CY=H/2;
   }
+
   function pxPerUnitX(){
-    const maxH=(units===ANGLE.MIL)?MAX_H_MIL:toMOA(MAX_H_MIL);
-    const usable=W - MARGIN_PX*2;
-    return usable / (maxH*2.0);
+    const maxH = (units===ANGLE.MIL)?MAX_H_MIL:toMOA(MAX_H_MIL);
+    const usable = W - MARGIN_PX*2;
+    return usable / (maxH * 2.0);
   }
   function pxPerUnitY(){
-    const maxV=(units===ANGLE.MIL)?MAX_V_MIL:toMOA(MAX_V_MIL);
-    const usable=H - MARGIN_PX*2;
+    const maxV = (units===ANGLE.MIL)?MAX_V_MIL:toMOA(MAX_V_MIL);
+    const usable = H - MARGIN_PX*2;
     return usable / (maxV + MAP_CUSHION_UNITS);
   }
 
-  // ====== Ballistics-ish helpers ======
   function interpDopeMil(yd){
-    if(yd<=RANGE_PTS[0]) return DOPE_MIL[0];
-    if(yd>=RANGE_PTS.at(-1)) return DOPE_MIL.at(-1);
-    for(let i=0;i<RANGE_PTS.length-1;i++){
+    if (yd<=RANGE_PTS[0]) return DOPE_MIL[0];
+    if (yd>=RANGE_PTS.at(-1)) return DOPE_MIL.at(-1);
+    for (let i=0;i<RANGE_PTS.length-1;i++){
       const x0=RANGE_PTS[i], x1=RANGE_PTS[i+1];
-      if(yd>=x0 && yd<=x1){
+      if (yd>=x0 && yd<=x1){
         const t=(yd-x0)/(x1-x0);
-        return DOPE_MIL[i] + t*(DOPE_MIL[i+1]-DOPE_MIL[i]);
+        return DOPE_MIL[i]+t*(DOPE_MIL[i+1]-DOPE_MIL[i]);
       }
     }
     return DOPE_MIL[0];
   }
-  function inchesToMilAtRange(inches, yd){
-    return inches / (36.0*(yd/1000.0));
-  }
-  function computeWindHoldMil(rangeYds, windMph, fromDeg, mphGun=6.0, spin=false){
-    const kyd=rangeYds/1000.0;
-    const s=Math.abs(Math.sin((fromDeg%360)*Math.PI/180));
-    const sign=((fromDeg%360)<180)?1:-1;
-    let mil=(windMph/mphGun)*kyd*s*sign;
-    if(spin) mil += 0.00007*Math.pow(rangeYds,1.2)*1.0;
-    return mil;
-  }
+  const inchesToMilAtRange = (inches, yd)=> inches / (36.0 * (yd/1000.0));
+
   function scoreZoneForImpact(dxMil, dyMil, yd){
-    const halfW=inchesToMilAtRange(IPSC.W/2,yd)+JITTER_PAD_MIL;
-    const halfH=inchesToMilAtRange(IPSC.H/2,yd)+JITTER_PAD_MIL;
-    const torsoTopOffsetMil = inchesToMilAtRange(IPSC.W*0.40, yd);
+    const halfW = inchesToMilAtRange(IPSC.W/2, yd) + JITTER_PAD_MIL;
+    const halfH = inchesToMilAtRange(IPSC.H/2, yd) + JITTER_PAD_MIL;
+    const torsoTopOffsetMil = inchesToMilAtRange(IPSC.W * 0.40, yd);
     const torsoCenterYMil = torsoTopOffsetMil - halfH + JITTER_PAD_MIL;
+    const lx = dxMil;
+    const ly = dyMil - torsoCenterYMil;
 
-    const lx=dxMil;
-    const ly=dyMil - torsoCenterYMil;
+    const inTorso = (Math.abs(lx) <= halfW) && (Math.abs(ly) <= halfH);
+    if (!inTorso) return 'Miss';
 
-    const inTorso=(Math.abs(lx)<=halfW)&&(Math.abs(ly)<=halfH);
-    if(!inTorso) return 'Miss';
+    const aHalfW = inchesToMilAtRange(IPSC.A_W/2, yd) + (JITTER_PAD_MIL*0.6);
+    const aHalfH = inchesToMilAtRange(IPSC.A_H/2, yd) + (JITTER_PAD_MIL*0.6);
+    const aTopFromTorsoTopMil = inchesToMilAtRange(IPSC.A_TOP, yd);
+    const aCenterYMil = (halfH - JITTER_PAD_MIL - aTopFromTorsoTopMil - aHalfH);
+    if (Math.abs(lx) <= aHalfW && Math.abs(ly - aCenterYMil) <= aHalfH) return 'A';
 
-    const aHalfW=inchesToMilAtRange(IPSC.A_W/2,yd)+(JITTER_PAD_MIL*0.6);
-    const aHalfH=inchesToMilAtRange(IPSC.A_H/2,yd)+(JITTER_PAD_MIL*0.6);
-    const aTopFromTop=inchesToMilAtRange(IPSC.A_TOP,yd);
-    const aCenterYMil=(halfH - JITTER_PAD_MIL - aTopFromTop - aHalfH);
-    if(Math.abs(lx)<=aHalfW && Math.abs(ly - aCenterYMil)<=aHalfH) return 'A';
-
-    const dInset=Math.max(0,inchesToMilAtRange(IPSC.D,yd)-(JITTER_PAD_MIL*0.5));
-    const nearEdge=(lx<-halfW+dInset)||(lx>halfW-dInset)||(ly>halfH-dInset)||(ly<-halfH+dInset);
-    if(nearEdge) return 'D';
+    const dInset = Math.max(0, inchesToMilAtRange(IPSC.D, yd) - (JITTER_PAD_MIL*0.5));
+    const nearEdge = (lx < -halfW + dInset) || (lx > halfW - dInset) || (ly > halfH - dInset) || (ly < -halfH + dInset);
+    if (nearEdge) return 'D';
     return 'C';
   }
 
-  // ====== UI ======
-  function updateHUD(){
-    const avg=(completed===0)?0:(sumErrUnits/completed);
-    const best=(units===ANGLE.MIL)?bestAvgMil:bestAvgMoa;
-    $chipWind.textContent = `💨 Wind: ${windMph.toFixed(0)} mph FROM ${windFrom.toFixed(0)}°`;
-    $chipRange.textContent= `📏 Range: ${rangeYds} yds`;
-    $chipTry.textContent  = `⬇️ Try DOPE: ${dirV(trueElev)} ${uTag()}`;
-    $chipAvg.textContent  = `📈 Avg: ${oneDec(avg)} ${uTag()} (${completed}/${ROUNDS})`;
-    $chipScore.textContent= `🎯 Score: ${sessionScore} • High: ${highScore}`;
-    $chipPB.textContent   = isFinite(best)? `🏅 PB Avg: ${oneDec(best)} ${uTag()}` : '🏅 PB Avg: —';
+  function computeWindHoldMil(rangeYds, windMph, fromDeg, mphGun=6.0, includeSpin=false){
+    const kyd = rangeYds/1000.0;
+    const s = Math.abs(Math.sin((fromDeg%360)*Math.PI/180));
+    const sign = ((fromDeg%360) < 180)? 1 : -1;
+    let mil = (windMph/mphGun)*kyd*s*sign;
+    if (includeSpin) mil += 0.00007 * Math.pow(rangeYds, 1.2) * 1.0;
+    return mil;
   }
 
-  // ====== Drawing ======
+  function updateHUD(){
+    const avg = (completed===0)?0:(sumErrUnits/completed);
+    const best = (units===ANGLE.MIL)?bestAvgMil:bestAvgMoa;
+    $chipWind.textContent  = `💨 Wind: ${windMph.toFixed(0)} mph FROM ${windFrom.toFixed(0)}°`;
+    $chipRange.textContent = `📏 Range: ${rangeYds} yds`;
+    $chipTry.textContent   = `⬇️ Try DOPE: ${dirV(trueElev)} ${uTag()}`;
+    $chipAvg.textContent   = `📈 Avg: ${oneDec(avg)} ${uTag()} (${completed}/${ROUNDS})`;
+    $chipScore.textContent = `🎯 Score: ${sessionScore} • High: ${highScore}`;
+    $chipPB.textContent    = isFinite(best)? `🏅 PB Avg: ${oneDec(best)} ${uTag()}` : '🏅 PB Avg: —';
+  }
+
   function draw(){
     fitCanvas();
-    const ppx=pxPerUnitX(), ppy=pxPerUnitY();
-    unitsPerPxX=1/ppx; unitsPerPxY=1/ppy;
+    const ppuX = pxPerUnitX(), ppuY = pxPerUnitY();
+    unitsPerPxX = 1/ppuX; unitsPerPxY = 1/ppuY;
 
-    // paint glass base
-    ctx.fillStyle='#0F1116';
+    // Clip to circular scope
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(CX, CY, Math.min(CX, CY), 0, Math.PI*2);
+    ctx.clip();
+
+    // Background inside scope (dark glass)
+    ctx.fillStyle = '#0F1116';
     ctx.fillRect(0,0,W,H);
 
-    // IPSC silhouette + waterline at CY
-    drawIPSC(CX,CY,ppx,ppy);
+    // IPSC silhouette & waterline
+    drawIPSCAligned(CX, CY, ppuX, ppuY);
 
-    // reticle translation (UP positive)
-    const offX=guessH*ppx;
-    const offY=-(guessV)*ppy;
+    // Reticle: center + tree DOWN only
+    const offX =  guessH * ppuX;
+    const offY = -(guessV) * ppuY; // UP positive
     ctx.save();
     ctx.translate(offX, offY);
-    drawTreeDownOnly(CX,CY,ppx,ppy);
+    drawTreeReticleDownOnly(CX, CY, ppuX, ppuY);
     ctx.restore();
 
-    // reveal markers
-    if(revealed){
-      const your = { x:CX+offX, y:CY+offY };
-      const tru  = { x:CX+(trueWindHold*ppx), y:CY-(trueElev*ppy) };
-      ctx.setLineDash([6,6]);
-      ctx.strokeStyle='rgba(255,255,255,0.6)'; ctx.lineWidth=1.2;
-      ctx.beginPath(); ctx.moveTo(your.x,your.y); ctx.lineTo(tru.x,tru.y); ctx.stroke();
+    // Reveal markers
+    if (revealed) {
+      const your = {x:CX+offX, y:CY+offY};
+      const truth = {x:CX+(trueWindHold*ppuX), y:CY-(trueElev*ppuY)};
+      ctx.setLineDash([6,6]); ctx.strokeStyle='rgba(255,255,255,0.6)'; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(your.x,your.y); ctx.lineTo(truth.x,truth.y); ctx.stroke();
       ctx.setLineDash([]);
-      // you
+
       ctx.strokeStyle='#7FB6FF'; ctx.lineWidth=2.4;
       ctx.beginPath(); ctx.moveTo(your.x-10,your.y); ctx.lineTo(your.x+10,your.y);
       ctx.moveTo(your.x,your.y-10); ctx.lineTo(your.x,your.y+10); ctx.stroke();
-      // truth
+
       ctx.strokeStyle='#E53935'; ctx.lineWidth=2.0;
-      ctx.beginPath(); ctx.moveTo(tru.x-10,tru.y); ctx.lineTo(tru.x+10,tru.y);
-      ctx.moveTo(tru.x,tru.y-10); ctx.lineTo(tru.x,tru.y+10); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(truth.x-10,truth.y); ctx.lineTo(truth.x+10,truth.y);
+      ctx.moveTo(truth.x,truth.y-10); ctx.lineTo(truth.x,truth.y+10); ctx.stroke();
     }
 
-    // wind ring (dial) around the edge for orientation
-    drawWindRing(CX,CY,Math.min(W,H)/2 - 6);
+    // Vignette inside clip (extra depth)
+    const grd = ctx.createRadialGradient(CX, CY, Math.min(CX, CY)*0.6, CX, CY, Math.min(CX, CY));
+    grd.addColorStop(0, 'rgba(0,0,0,0)');
+    grd.addColorStop(1, 'rgba(0,0,0,0.4)');
+    ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+
+    ctx.restore(); // end circular clip
   }
 
-  function drawIPSC(cx,cy,ppx,ppy){
-    const inchMil=i=>inchesToMilAtRange(i,rangeYds);
-    const w=inchMil(IPSC.W)*ppx, h=inchMil(IPSC.H)*ppy;
-    const waterFrac=0.60, top=cy - h*waterFrac, left=cx - w/2;
+  function drawIPSCAligned(cx, cy, ppuX, ppuY){
+    const inchMil = inch => inchesToMilAtRange(inch, rangeYds);
+    const wMil = inchMil(IPSC.W), hMil = inchMil(IPSC.H);
+    const w = wMil*ppuX, h = hMil*ppuY;
+    const waterFrac = 0.60;
+    const top = cy - h*waterFrac;
+    const left = cx - w/2;
 
-    // silhouette (torso + head)
-    ctx.save();
-    const path=new Path2D(); roundedRectPath(path,left,top,w,h,10);
-    const headH=h*0.16, headW=w*0.42, headTop=top - headH;
-    const hx0=cx - headW/2, hx1=cx + headW/2;
-    path.moveTo(hx0, headTop+6); path.lineTo(hx0+6, headTop);
-    path.lineTo(hx1-6, headTop); path.lineTo(hx1, headTop+6);
-    path.lineTo(hx1, top+0.5); path.lineTo(hx0, top+0.5); path.closePath();
+    // body path with head cap
+    const path = new Path2D();
+    roundedRectPath(path, left, top, w, h, 10);
+    // head slab
+    const headH = h*0.16, headW = w*0.42, headTop = top - headH;
+    const hx0 = cx - headW/2, hx1 = cx + headW/2;
+    path.moveTo(hx0, headTop + 6);
+    path.lineTo(hx0+6, headTop);
+    path.lineTo(hx1-6, headTop);
+    path.lineTo(hx1, headTop + 6);
+    path.lineTo(hx1, top+0.5);
+    path.lineTo(hx0, top+0.5);
+    path.closePath();
 
-    // fill + subtle gradient
-    ctx.shadowColor='rgba(0,0,0,0.35)'; ctx.shadowBlur=10;
-    ctx.fillStyle='#1C2029'; ctx.fill(path);
-    ctx.shadowBlur=0; ctx.restore();
+    // fill + subtle highlight
+    ctx.fillStyle = '#1C2029'; ctx.fill(path);
+    ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1.4; ctx.stroke(path);
 
-    // outline
-    ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1.6; ctx.stroke(path);
+    // faint guides
+    const aW = inchMil(IPSC.A_W)*ppuX, aH = inchMil(IPSC.A_H)*ppuY;
+    const aTop = top + inchMil(IPSC.A_TOP)*ppuY;
+    dashedRect(cx-aW/2, aTop, aW, aH, 'rgba(255,255,255,0.10)');
 
-    // guides
-    const aW=(inchMil(IPSC.A_W)*ppx), aH=(inchMil(IPSC.A_H)*ppy);
-    const aTop=top + inchMil(IPSC.A_TOP)*ppy;
-    dashedRect(cx - aW/2, aTop, aW, aH, 'rgba(255,255,255,0.12)');
-    const dInsetX=inchMil(IPSC.D)*ppx, dInsetY=inchMil(IPSC.D)*ppy;
-    dashedRect(left + dInsetX, top + dInsetY, w - 2*dInsetX, h - 2*dInsetY, 'rgba(255,255,255,0.10)');
+    const dInsetX = inchMil(IPSC.D)*ppuX, dInsetY = inchMil(IPSC.D)*ppuY;
+    dashedRect(left+dInsetX, top+dInsetY, w-2*dInsetX, h-2*dInsetY, 'rgba(255,255,255,0.08)');
 
-    // waterline
-    ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=2;
+    // waterline and aim dot
+    ctx.strokeStyle='rgba(255,255,255,0.92)'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(left + w*0.04, cy); ctx.lineTo(left + w*0.96, cy); ctx.stroke();
 
-    // aim dot
-    ctx.fillStyle='rgba(255,255,255,0.78)'; ctx.beginPath(); ctx.arc(cx,cy,3.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.78)';
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
   }
 
   function roundedRectPath(p,x,y,w,h,r){
@@ -392,11 +362,213 @@
     p.lineTo(x,y+r); p.quadraticCurveTo(x,y,x+r,y);
   }
   function dashedRect(x,y,w,h,color){
-    ctx.save(); ctx.setLineDash([7,7]); ctx.strokeStyle=color; ctx.lineWidth=1.0; ctx.strokeRect(x,y,w,h); ctx.restore();
+    ctx.save(); ctx.setLineDash([7,7]); ctx.strokeStyle=color; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h); ctx.restore();
   }
 
-  // reticle: center line + tree downward only
-  function drawTreeDownOnly(cx,cy,ppx,ppy){
-    const isMOA=(units===ANGLE.MOA);
-    const minorTick=isMOA?1.0:0.5, rowStep=isMOA?2:1;
-    const maxHX=isMOA?toMOA(MAX_H_MIL):MAX_H_M
+  function drawTreeReticleDownOnly(cx, cy, ppuX, ppuY){
+    const isMOA = (units===ANGLE.MOA);
+    const minorTick = isMOA ? 1.0 : 0.5;
+    const rowStep   = isMOA ? 2   : 1;
+
+    // center horizontal axis
+    ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.8;
+    const maxHX = (isMOA?toMOA(MAX_H_MIL):MAX_H_MIL);
+    ctx.beginPath();
+    ctx.moveTo(cx - (maxHX*ppuX) - 8, cy);
+    ctx.lineTo(cx + (maxHX*ppuX) + 8, cy);
+    ctx.stroke();
+
+    // tiny center cross
+    ctx.beginPath(); ctx.moveTo(cx-8,cy); ctx.lineTo(cx+8,cy); ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy+8); ctx.stroke();
+
+    const maxV = (isMOA?toMOA(MAX_V_MIL):MAX_V_MIL);
+    const maxRow = Math.floor(maxV);
+    for (let row = rowStep; row <= maxRow; row += rowStep){
+      const y = cy + row * ppuY;
+      const branchUnits = maxHX * (row / maxV);
+      const xL = cx - branchUnits * ppuX, xR = cx + branchUnits * ppuX;
+
+      ctx.strokeStyle = isMOA
+        ? (row%10===0?'rgba(255,255,255,1.0)':row%5===0?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.7)')
+        : 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = isMOA ? (row%10===0?2.0:row%5===0?1.6:1.2) : 1.2;
+      ctx.beginPath(); ctx.moveTo(xL,y); ctx.lineTo(xR,y); ctx.stroke();
+
+      for (let u=-branchUnits; u<=branchUnits+1e-6; u+=minorTick){
+        const absu = Math.abs(u);
+        const x = cx + u*ppuX;
+        let len = isMOA?5:4, lw=1.0;
+        if (isMOA){
+          if (Math.abs(absu%10)<1e-6){len=11; lw=1.6;}
+          else if (Math.abs(absu%5)<1e-6){len=9; lw=1.4;}
+          else if (Math.abs(absu%2)<1e-6){len=7; lw=1.2;}
+        } else {
+          if (Math.abs(absu%1.0)<1e-6){len=8; lw=1.2;}
+        }
+        ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=lw;
+        ctx.beginPath(); ctx.moveTo(x, y-len/2); ctx.lineTo(x, y+len/2); ctx.stroke();
+      }
+
+      const showRowLabel = isMOA ? (row%10===0) : true;
+      if (showRowLabel){
+        ctx.fillStyle='rgba(225,230,240,0.95)'; ctx.font='12px ui-monospace,monospace';
+        ctx.textAlign='right'; ctx.textBaseline='bottom';
+        ctx.fillText(String(row), xL - 10, y - 6);
+      }
+    }
+
+    // Unit tag (top-left of center line)
+    ctx.fillStyle='rgba(225,230,240,0.95)'; ctx.font='12px ui-monospace,monospace';
+    ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.fillText(units, cx - (maxHX + 0.6) * ppuX, cy - 10);
+  }
+
+  // ===== Flow =====
+  function pickRangeYds(){ const min=100, max=1000; const steps=Math.floor((max-min)/50); return min + Math.floor(Math.random()*(steps+1))*50; }
+  function newRound(){
+    rangeYds = pickRangeYds();
+    windMph = 2 + Math.floor(Math.random()*19);
+    const bands=[[60,120],[240,300],[0,360]];
+    const b=(Math.random()<0.7)?bands[Math.floor(Math.random()*2)]:bands[2];
+    windFrom = Math.random()*(b[1]-b[0]) + b[0];
+
+    const elevMil = interpDopeMil(rangeYds);
+    const windMil = computeWindHoldMil(rangeYds, windMph, windFrom, 6.0, includeSpin);
+
+    if (units===ANGLE.MIL){ trueElev=elevMil; trueWindHold=windMil; }
+    else { trueElev=toMOA(elevMil); trueWindHold=toMOA(windMil); }
+
+    guessH=0; guessV=trueElev;
+    revealed=false; hintUsed=false; $btnHint.disabled=false;
+
+    updateHUD(); draw();
+  }
+
+  function reveal(){
+    if (revealed) return; revealed=true;
+
+    const dx = guessH - trueWindHold, dy = guessV - trueElev;
+    const err = Math.hypot(dx,dy); sumErrUnits += err; completed += 1;
+
+    const dxMil=(units===ANGLE.MIL)?dx:toMIL(dx);
+    const dyMil=(units===ANGLE.MIL)?dy:toMIL(dy);
+    const errMil=Math.hypot(dxMil,dyMil);
+
+    const zone = scoreZoneForImpact(dxMil,dyMil,rangeYds);
+    lastZone=zone;
+    let pts = zone==='A'?100 : zone==='C'?70 : zone==='D'?40 : 0;
+    if (hintUsed) pts=Math.floor(pts*0.5);
+    lastPoints=pts; sessionScore+=pts;
+
+    if (completed>=ROUNDS) persistPBAndHigh();
+
+    const avg=(completed===0)?0:(sumErrUnits/completed);
+    $mRange.textContent=`Range: ${rangeYds} yds`;
+    $mWind.textContent =`Wind: ${windMph.toFixed(0)} mph FROM ${windFrom.toFixed(0)}°`;
+    $mYour.textContent =`Your: ${dirH(guessH)} • ${dirV(guessV)} (${uTag()})`;
+    $mTrue.textContent =`True: ${dirH(trueWindHold)} • ${dirV(trueElev)} (${uTag()})`;
+    $mErr.textContent  =`Error: ${oneDec(errMil)} MIL • Zone: ${lastZone}`;
+    $mPts.textContent  =`Points: +${lastPoints}${hintUsed?' (−50% hint)':''} • Session: ${sessionScore} / 1000`;
+    $mAvg.textContent  =`Round ${completed}/${ROUNDS} • Avg: ${oneDec(avg)} ${uTag()}`;
+    $modal.style.display='flex';
+
+    draw(); updateHUD();
+  }
+
+  function nextRound(){
+    if (completed>=ROUNDS){ completed=0; sumErrUnits=0; sessionScore=0; }
+    $modal.style.display='none'; newRound();
+  }
+
+  function persistPBAndHigh(){
+    const avg=(completed===0)?0:(sumErrUnits/completed);
+    if (units===ANGLE.MIL){
+      const cur=parseFloat(localStorage.getItem(LS_BEST_MIL) || 'NaN');
+      if (!isFinite(cur) || avg<cur) localStorage.setItem(LS_BEST_MIL, String(avg));
+    } else {
+      const cur=parseFloat(localStorage.getItem(LS_BEST_MOA) || 'NaN');
+      if (!isFinite(cur) || avg<cur) localStorage.setItem(LS_BEST_MOA, String(avg));
+    }
+    if (sessionScore>highScore){ highScore=sessionScore; localStorage.setItem(LS_HIGH, String(highScore)); }
+  }
+
+  // ===== Interactions =====
+  // drag (anchored)
+  let dragging=false, dragStart={x:0,y:0}, dragOrigin={h:0,v:0};
+  function startDrag(x,y){ if (revealed) return; dragging=true; dragStart={x,y}; dragOrigin={h:guessH, v:guessV}; }
+  function moveDrag(x,y){
+    if (!dragging || revealed) return;
+    const dxPx=x-dragStart.x, dyPx=y-dragStart.y;
+    const dH=dxPx * unitsPerPxX, dV=-dyPx * unitsPerPxY;
+    const maxH=(units===ANGLE.MIL)?MAX_H_MIL:toMOA(MAX_H_MIL);
+    const maxV=(units===ANGLE.MIL)?MAX_V_MIL:toMOA(MAX_V_MIL);
+    guessH = clamp(dragOrigin.h + dH, -maxH, maxH);
+    guessV = clamp(dragOrigin.v + dV, -maxV, maxV);
+    draw();
+  }
+  function endDrag(){ if(!dragging || revealed) return; dragging=false; guessH=snap(guessH); guessV=snap(guessV); updateHUD(); draw(); }
+
+  canvas.addEventListener('mousedown', e=>startDrag(e.clientX,e.clientY));
+  window.addEventListener('mousemove', e=>moveDrag(e.clientX,e.clientY));
+  window.addEventListener('mouseup', endDrag);
+  canvas.addEventListener('touchstart', e=>{const t=e.touches[0]; startDrag(t.clientX,t.clientY);},{passive:true});
+  window.addEventListener('touchmove', e=>{const t=e.touches[0]; moveDrag(t.clientX,t.clientY);},{passive:true});
+  window.addEventListener('touchend', endDrag);
+
+  // double-click/tap to reset to Try DOPE
+  canvas.addEventListener('dblclick', ()=>{ if (revealed) return; guessH=0; guessV=snap(trueElev); draw(); });
+
+  // Controls
+  $btnUnits.addEventListener('click', ()=>{
+    if (units===ANGLE.MIL){
+      units=ANGLE.MOA; guessH=toMOA(guessH); guessV=toMOA(guessV); trueElev=toMOA(trueElev); trueWindHold=toMOA(trueWindHold);
+      $btnUnits.textContent='MOA (0.25)';
+    } else {
+      units=ANGLE.MIL; guessH=toMIL(guessH); guessV=toMIL(guessV); trueElev=toMIL(trueElev); trueWindHold=toMIL(trueWindHold);
+      $btnUnits.textContent='MIL (0.1)';
+    }
+    updateHUD(); draw();
+  });
+
+  $btnSpin.addEventListener('click', ()=>{
+    includeSpin=!includeSpin; $btnSpin.textContent=`Spin: ${includeSpin?'On':'Off'}`; $btnSpin.classList.toggle('toggle-on', includeSpin);
+    // Recompute truth for current round (keep range/wind)
+    const elevMil = interpDopeMil(rangeYds);
+    const wMil = computeWindHoldMil(rangeYds, windMph, windFrom, 6.0, includeSpin);
+    if (units===ANGLE.MIL){ trueElev=elevMil; trueWindHold=wMil; } else { trueElev=toMOA(elevMil); trueWindHold=toMOA(wMil); }
+    updateHUD(); draw();
+  });
+
+  $btnNew.addEventListener('click', ()=>{ completed=0; sumErrUnits=0; sessionScore=0; newRound(); });
+  $btnHint.addEventListener('click', ()=>{
+    if (hintUsed || revealed) return;
+    const value = Math.abs(Math.sin((windFrom%360)*Math.PI/180));
+    const badge = value>=0.87?'FULL' : value>=0.62?'¾' : value>=0.38?'½' : value>=0.20?'¼' : 'LOW';
+    const fullMil = WIND_SCALE * (windMph/10) * (rangeYds/1000);
+    const sign = ((windFrom%360)<180)?1:-1;
+    const holdMil = fullMil * value * sign;
+    const holdUnits = units===ANGLE.MIL ? Math.abs(holdMil) : Math.abs(toMOA(holdMil));
+    const label = units===ANGLE.MIL ? 'MIL' : 'MOA';
+    const dir = (holdMil>=0)?'RIGHT':'LEFT';
+    $hMeta.textContent = `FROM ${windFrom.toFixed(0)}° • ${windMph.toFixed(0)} mph • ${badge}`;
+    $hFull.textContent = `Full-value @ ${rangeYds} yd: ${oneDec(fullMil)} MIL`;
+    $hStart.textContent= `Start: ${oneDec(holdUnits)} ${dir}  (${oneDec(Math.abs(toMOA(holdMil)))} MOA)`;
+    $hintModal.style.display='flex';
+    hintUsed=true; $btnHint.disabled=true;
+  });
+  $btnHintClose.addEventListener('click', ()=>{ $hintModal.style.display='none'; });
+
+  $btnReveal.addEventListener('click', reveal);
+  $btnNext.addEventListener('click', nextRound);
+
+  // Boot
+  window.addEventListener('resize', draw);
+  newRound();
+})();
+</script>
+
+<!-- Your existing shared header + watermark scripts should be included site-wide.
+     This page assumes they run and populate #site-header. -->
+
+</body>
+</html>
