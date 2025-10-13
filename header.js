@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Build header
   mount.innerHTML = `
     <div class="brand">
-      <div class="logo" aria-hidden="true"></div>
+      <img class="logo-img" src="second_logo.png" alt="" width="24" height="24" decoding="async">
       <strong>Impact Ballistics</strong>
     </div>
 
@@ -31,19 +31,13 @@ document.addEventListener('DOMContentLoaded', () => {
       nav.classList.remove('open');
       toggle.setAttribute('aria-expanded', 'false');
     };
-    const openMenu = () => {
-      nav.classList.add('open');
-      toggle.setAttribute('aria-expanded', 'true');
-    };
     toggle.addEventListener('click', () => {
       const isOpen = nav.classList.toggle('open');
       toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
     // Close on link click (mobile)
     nav.addEventListener('click', (e) => {
-      const a = e.target.closest('a');
-      if (!a) return;
-      closeMenu();
+      if (e.target.closest('a')) closeMenu();
     });
     // Close on Escape
     document.addEventListener('keydown', (e) => {
@@ -54,19 +48,19 @@ document.addEventListener('DOMContentLoaded', () => {
     mq.addEventListener?.('change', (ev) => { if (ev.matches) closeMenu(); });
   }
 
-  // Active link highlight (filename-based, ignores folders, query, and hash)
+  // Active link highlight (filename-based, ignores folders, query, hash)
   const normalize = (url) => {
     try {
       const u = new URL(url, window.location.href);
-      const file = u.pathname.split('/').filter(Boolean).pop() || 'index.html';
-      return file.toLowerCase();
-    } catch {
-      return 'index.html';
-    }
+      return (u.pathname.split('/').filter(Boolean).pop() || 'index.html').toLowerCase();
+    } catch { return 'index.html'; }
   };
   const current = normalize(window.location.href);
   mount.querySelectorAll('.site-nav a').forEach(a => {
     const target = normalize(a.getAttribute('href') || '');
-    if (target === current) a.classList.add('is-active');
+    if (target === current) {
+      a.classList.add('is-active');
+      a.setAttribute('aria-current', 'page');
+    }
   });
 });
