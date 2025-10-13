@@ -161,6 +161,36 @@ header .logo-img{
   color:var(--muted); font-weight:600; font-size:12px;
 }
 
+/* === Screenshots Grid === */
+.screenshots .shots-grid{
+  display:grid;
+  gap:12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); /* ≥2 wide on desktop */
+  align-items:start;
+}
+
+.screenshots .shots-grid img{
+  width:100%;
+  height:auto;
+  display:block;
+  border-radius:12px;
+  border:1px solid var(--line, #1e2536);
+  background:#0f1422;
+}
+
+/* optional: captions */
+.screenshots figure{ margin:0; }
+.screenshots figcaption{
+  margin-top:6px; font-size:12px; color:var(--muted, #a5adbd);
+}
+
+/* tighten on huge screens (more columns, still small) */
+@media (min-width:1100px){
+  .screenshots .shots-grid{
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
 /* ================================
    Footer
    ================================ */
