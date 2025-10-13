@@ -1,50 +1,52 @@
-/* === Unified Header (with PNG logo) === */
+/* === Unified Header (resilient) === */
 :root{
   --header-h: 56px;
-  --logo-size: 24px; /* tweak as needed */
+  --logo-size: 24px;
 }
 
 header.container.nav{
   position: sticky; top: 0; z-index: 1000;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   height: var(--header-h); padding: 0 14px;
-  background: #0d121e; border-bottom: 1px solid var(--line);
+  background: #0d121e; 
+  border-bottom: 1px solid var(--line, #1e2536);
+  color: var(--ink, #e7e9ef);
 }
 
 header .brand{ display:flex; align-items:center; gap:10px; font-weight:800; }
-
-/* Use your PNG logo (from header.js) */
 header .logo-img{
-  width: var(--logo-size);
-  height: var(--logo-size);
-  display: block;
-  object-fit: contain;
-  border-radius: 6px;          /* remove if you want sharp corners */
+  width: var(--logo-size); height: var(--logo-size);
+  display:block; object-fit: contain; border-radius:6px;
 }
 
 .site-nav{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
 .site-nav a{
-  color: var(--muted); text-decoration:none; padding:6px 10px; border-radius:10px;
+  color: var(--muted, #a5adbd);
+  text-decoration:none; padding:6px 10px; border-radius:10px;
   transition: transform .12s ease, background .12s ease, color .12s ease;
 }
-.site-nav a:hover{ color: var(--ink); background: rgba(142,245,177,.08); transform: translateY(-1px); }
-.site-nav a.is-active{ color: var(--ink); background: rgba(142,245,177,.16); }
+.site-nav a:hover{
+  color: var(--ink, #e7e9ef);
+  background: rgba(142,245,177,.08);
+  transform: translateY(-1px);
+}
+.site-nav a.is-active{
+  color: var(--ink, #e7e9ef);
+  background: rgba(142,245,177,.16);
+}
 
 .header-toggle{
-  display:none; width:40px; height:36px; border:1px solid var(--line);
-  border-radius:10px; background:transparent; color:var(--ink); font-size:18px;
+  display:none; width:40px; height:36px; border:1px solid var(--line, #1e2536);
+  border-radius:10px; background:transparent; color:var(--ink, #e7e9ef); font-size:18px;
 }
-.header-toggle:focus{ outline:2px solid var(--accent); outline-offset:2px; }
+.header-toggle:focus{ outline:2px solid var(--accent, #8ef5b1); outline-offset:2px; }
 
-/* Mobile menu */
 @media (max-width:780px){
-  :root{ --logo-size: 22px; } /* slightly smaller icon on mobile */
-
+  :root{ --logo-size: 22px; }
   .header-toggle{ display:inline-flex; align-items:center; justify-content:center; }
-
   .site-nav{
     position: fixed; left: 0; right: 0; top: var(--header-h);
-    background: #0d121e; border-top: 1px solid var(--line);
+    background: #0d121e; border-top: 1px solid var(--line, #1e2536);
     padding: 10px 12px; display: none; flex-direction: column; gap: 8px;
   }
   .site-nav.open{ display: flex; }
