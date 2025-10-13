@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <button class="header-toggle" aria-label="Menu" aria-expanded="false">☰</button>
 
     <nav class="site-nav" aria-label="Primary">
-      <a href="/">Home</a>
+      <a href="index.html">Home</a>
       <a href="help.html">Help</a>
       <a href="screenshots.html">Screenshots</a>
       <a href="wind-hold-challenge.html">Wind Challenge</a>
@@ -22,22 +22,51 @@ document.addEventListener('DOMContentLoaded', () => {
     </nav>
   `;
 
-  // Mobile toggle
   const toggle = mount.querySelector('.header-toggle');
   const nav = mount.querySelector('.site-nav');
+
+  // Mobile toggle
   if (toggle && nav) {
+    const closeMenu = () => {
+      nav.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    };
+    const openMenu = () => {
+      nav.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+    };
     toggle.addEventListener('click', () => {
-      const open = nav.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      const isOpen = nav.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
+    // Close on link click (mobile)
+    nav.addEventListener('click', (e) => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      closeMenu();
+    });
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
+    });
+    // Auto-close when viewport grows past mobile breakpoint
+    const mq = window.matchMedia('(min-width: 781px)');
+    mq.addEventListener?.('change', (ev) => { if (ev.matches) closeMenu(); });
   }
 
-  // Active link highlight
-  const path = (location.pathname.replace(/^\//,'') || 'index.html').toLowerCase();
+  // Active link highlight (filename-based, ignores folders, query, and hash)
+  const normalize = (url) => {
+    try {
+      const u = new URL(url, window.location.href);
+      const file = u.pathname.split('/').filter(Boolean).pop() || 'index.html';
+      return file.toLowerCase();
+    } catch {
+      return 'index.html';
+    }
+  };
+  const current = normalize(window.location.href);
   mount.querySelectorAll('.site-nav a').forEach(a => {
-    const href = a.getAttribute('href')?.replace(/^\//,'').toLowerCase() || '';
-    const isHome = (path === 'index.html' || path === '');
-    const match = (href === '/' && isHome) || (href && path.endsWith(href));
-    if (match) a.classList.add('is-active');
+    const target = normalize(a.getAttribute('href') || '');
+    if (target === current) a.classList.add('is-active');
   });
 });
