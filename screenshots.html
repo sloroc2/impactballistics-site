@@ -4,30 +4,51 @@
 <meta charset="utf-8">
 <title>Screenshots • Impact Ballistics</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="https://www.impactballisticsapp.com/screenshots.html">
+<meta name="description" content="App screenshots for Impact Ballistics — clean UI, fast flow, dark by default.">
 <link rel="stylesheet" href="styles.css">
+
+<!-- Page-scoped layout: force 2-wide desktop / 1-wide mobile -->
+<style>
+  body.screenshots .gallery{
+    display:grid; gap:12px; grid-template-columns:1fr;
+  }
+  @media (min-width:781px){
+    body.screenshots .gallery{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+  }
+  body.screenshots .gallery .thumb{
+    width:100%; height:auto; display:block;
+    border-radius:12px; border:1px solid var(--line, #1e2536); background:#0f1422;
+  }
+</style>
 </head>
 <body class="screenshots">
+
 <header id="site-header" class="container nav"></header>
-<script src="header.js?v=2"></script>
+<script src="header.js?v=3"></script>
 
 <main class="container">
   <h1 class="h1">App Screens</h1>
   <p class="sub">Clean UI. Fast flow. Dark by default.</p>
+
   <div class="gallery">
-    <img class="thumb" src="home.png" alt="Home screen" loading="lazy">
-    <img class="thumb" src="rifle_profiles.png" alt="Rifle profiles" loading="lazy">
-    <img class="thumb" src="handload_ammo.png" alt="Handload Ammo" loading="lazy">
-    <img class="thumb" src="calculator.png" alt="Calculator" loading="lazy">
-    <img class="thumb" src="weather.png" alt="Weather" loading="lazy">
-    <img class="thumb" src="advanced.png" alt="Advanced" loading="lazy">
-    <img class="thumb" src="trainer.png" alt="Wind Hold Trainer" loading="lazy">
-    <img class="thumb" src="drawer.png" alt="App drawer" loading="lazy">
+    <img class="thumb" src="home.png" alt="Home screen" loading="lazy" width="900" height="1600">
+    <img class="thumb" src="rifle_profiles.png" alt="Rifle profiles" loading="lazy" width="900" height="1600">
+    <img class="thumb" src="handload_ammo.png" alt="Handload and ammo" loading="lazy" width="900" height="1600">
+    <img class="thumb" src="calculator.png" alt="Ballistics calculator" loading="lazy" width="900" height="1600">
+    <img class="thumb" src="weather.png" alt="Weather and density altitude" loading="lazy" width="900" height="1600">
+    <img class="thumb" src="advanced.png" alt="Advanced settings" loading="lazy" width="900" height="1600">
+    <img class="thumb" src="trainer.png" alt="Wind Hold Trainer" loading="lazy" width="900" height="1600">
+    <img class="thumb" src="drawer.png" alt="App drawer" loading="lazy" width="900" height="1600">
   </div>
 </main>
 
 <footer class="container footer">
   <div>© <span id="y"></span> Impact Ballistics.</div>
 </footer>
-<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+<script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+
 </body>
 </html>
