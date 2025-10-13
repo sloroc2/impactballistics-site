@@ -1,11 +1,18 @@
-// Build shared header
+// header.js — single source of truth for the site header
 document.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('site-header');
-  if (!el) return;
+  const mount = document.getElementById('site-header');
+  if (!mount) return;
 
-  el.innerHTML = `
-    <div class="brand"><div class="logo"></div><strong>Impact Ballistics</strong></div>
-    <nav class="site-nav">
+  // Build header
+  mount.innerHTML = `
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <strong>Impact Ballistics</strong>
+    </div>
+
+    <button class="header-toggle" aria-label="Menu" aria-expanded="false">☰</button>
+
+    <nav class="site-nav" aria-label="Primary">
       <a href="/">Home</a>
       <a href="help.html">Help</a>
       <a href="screenshots.html">Screenshots</a>
@@ -15,28 +22,22 @@ document.addEventListener('DOMContentLoaded', () => {
     </nav>
   `;
 
-  // Highlight current page
-  const path = location.pathname.replace(/^\//,'').toLowerCase() || 'index.html';
-  document.querySelectorAll('.site-nav a').forEach(a => {
-    const href = a.getAttribute('href').toLowerCase();
-    // treat "/" as index.html for highlight purposes
-    const normalized = href === '/' ? 'index.html' : href;
-    if (path === normalized) a.classList.add('active');
-  });
-});
-
-// Site-wide watermark (off on screenshots page)
-document.addEventListener('DOMContentLoaded', () => {
-  const b = document.body;
-  if (!b.classList.contains('screenshots')) {
-    Object.assign(b.style, {
-      backgroundImage: 'url("second_logo.png")',
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'center 35%',
-      backgroundAttachment: 'fixed',
-      backgroundSize: '520px auto'
+  // Mobile toggle
+  const toggle = mount.querySelector('.header-toggle');
+  const nav = mount.querySelector('.site-nav');
+  if (toggle && nav) {
+    toggle.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
-  } else {
-    b.style.backgroundImage = 'none';
   }
+
+  // Active link highlight
+  const path = (location.pathname.replace(/^\//,'') || 'index.html').toLowerCase();
+  mount.querySelectorAll('.site-nav a').forEach(a => {
+    const href = a.getAttribute('href')?.replace(/^\//,'').toLowerCase() || '';
+    const isHome = (path === 'index.html' || path === '');
+    const match = (href === '/' && isHome) || (href && path.endsWith(href));
+    if (match) a.classList.add('is-active');
+  });
 });
