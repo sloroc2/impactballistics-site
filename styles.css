@@ -4,6 +4,7 @@
 
 /* Global color tokens */
 :root{
+  color-scheme: dark;
   --bg:#0e1116;
   --ink:#e7e9ef;
   --muted:#a5adbd;
@@ -69,7 +70,7 @@ header .logo-img{
   display:flex; align-items:center; gap:14px;
   flex:1 1 auto; min-width:0;
   flex-wrap:nowrap;           /* do not wrap on desktop */
-  overflow-x:auto;            /* if tight, it scrolls instead of disappearing */
+  overflow-x:auto;            /* scroll instead of disappearing */
   scrollbar-width:none;
 }
 .site-nav::-webkit-scrollbar{ display:none; }
@@ -161,7 +162,10 @@ header .logo-img{
   color:var(--muted); font-weight:600; font-size:12px;
 }
 
-/* === Screenshots Grid === */
+/* ================================
+   Screenshots Grid
+   ================================ */
+
 .screenshots .shots-grid{
   display:grid;
   gap:12px;
@@ -174,14 +178,14 @@ header .logo-img{
   height:auto;
   display:block;
   border-radius:12px;
-  border:1px solid var(--line, #1e2536);
+  border:1px solid var(--line);
   background:#0f1422;
 }
 
 /* optional: captions */
 .screenshots figure{ margin:0; }
 .screenshots figcaption{
-  margin-top:6px; font-size:12px; color:var(--muted, #a5adbd);
+  margin-top:6px; font-size:12px; color:var(--muted);
 }
 
 /* tighten on huge screens (more columns, still small) */
