@@ -10,6 +10,19 @@
 <meta property="og:title" content="Impact Ballistics App">
 <meta property="og:description" content="Clean dope tables, wind holds, and a wind-hold trainer.">
 <meta property="og:type" content="website">
+
+<style>
+  .ib-stores{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:stretch;margin:20px 0 0}
+  .ib-card{position:relative;display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;background:#101318;border:1px solid #1e2532;text-decoration:none;color:#e7e9ef;transition:transform .12s ease,border-color .12s ease}
+  .ib-card:hover{transform:translateY(-2px);border-color:#2b3750}
+  .ib-card:focus-visible{outline:2px solid #4ea1ff;outline-offset:3px}
+  .ib-icon{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;background:#0c0f14;border:1px solid #222a3a;border-radius:10px}
+  .ib-txt{line-height:1.2}
+  .ib-small{font-size:12px;opacity:.75}
+  .ib-name{font-size:16px;font-weight:600}
+  .ib-card.is-disabled{pointer-events:none;opacity:.6;filter:grayscale(1)}
+  .ib-card.is-disabled .ib-soon{position:absolute;right:10px;top:10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:#2a2f3d;color:#cbd3e3;border:1px solid #3a4154;padding:4px 6px;border-radius:999px}
+</style>
 </head>
 <body>
 
@@ -22,6 +35,33 @@
     <h1 class="h1">Fast, clean ballistics that don’t get in your way</h1>
     <p class="sub">TRY/TRUE tables, weather-aware wind, density altitude, and a Wind Hold Trainer to sharpen calls.</p>
     <a class="cta" href="help.html">Read the Quick Start</a>
+
+    <div class="ib-stores" aria-label="Get the app">
+      <a class="ib-card" href="https://apps.apple.com/us/app/impact-ballistic-app/id6753908404" rel="noopener" target="_blank" aria-label="Download on the App Store">
+        <span class="ib-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Apple">
+            <path d="M16.365 12.705c.03 3.273 2.867 4.364 2.9 4.38-.023.072-.454 1.556-1.494 3.087-0.9 1.328-1.835 2.654-3.3 2.68-1.44.026-1.904-.866-3.55-.866-1.645 0-2.162.838-3.526.892-1.415.054-2.49-1.436-3.395-2.76-1.847-2.688-3.257-7.6-1.36-10.922.942-1.638 2.622-2.674 4.472-2.7 1.395-.027 2.71.938 3.55.938.84 0 2.44-1.156 4.113-.987.701.029 2.678.284 3.944 2.133-.103.065-2.354 1.375-2.254 3.125zM13.8 3.983c.73-.885 1.223-2.122 1.09-3.354-1.055.043-2.332.703-3.09 1.588-.678.79-1.272 2.053-1.11 3.262 1.176.092 2.383-.6 3.11-1.496z"/>
+          </svg>
+        </span>
+        <span class="ib-txt">
+          <span class="ib-small">Download on the</span><br>
+          <span class="ib-name">App Store</span>
+        </span>
+      </a>
+
+      <div class="ib-card is-disabled" aria-disabled="true" aria-label="Google Play coming soon">
+        <span class="ib-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" role="img" aria-label="Android">
+            <path d="M17.6 8.4l1.6-2.8-.9-.5-1.6 2.8c-1.2-.6-2.6-.9-4.1-.9s-2.9.3-4.1.9L6.9 5.1l-.9.5 1.6 2.8C5.7 9.4 4.5 11.1 4.5 13v6.5c0 .3.2.5.5.5h2c.3 0 .5-.2 .5-.5V13c0-1 .8-1.8 1.8-1.8h5.4c1 0 1.8 .8 1.8 1.8v6.5c0 .3 .2 .5 .5 .5h2c.3 0 .5-.2 .5-.5V13c0-1.9-1.2-3.6-3-4.6zM9.2 3.6a.7.7 0 11-1.4 0 .7.7 0 011.4 0zm7 0a.7.7 0 11-1.4 0 .7.7 0 011.4 0z"/>
+          </svg>
+        </span>
+        <span class="ib-txt">
+          <span class="ib-small">Get it on</span><br>
+          <span class="ib-name">Google Play</span>
+        </span>
+        <span class="ib-soon">Coming soon</span>
+      </div>
+    </div>
   </section>
 
   <section class="grid">
@@ -61,3 +101,4 @@
 <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
 </body>
 </html>
+
