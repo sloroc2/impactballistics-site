@@ -1,0 +1,5 @@
+# Connected Services deployment
+The directory is /services/ and the weather endpoint is /api/local-weather.
+For Cloudflare Pages, keep the existing static build settings and ensure Pages Functions are enabled. Add the existing OpenWeather API key as an encrypted production secret OPENWEATHER_API_KEY. Only after confirming the existing subscription permits free use and caps charges, set OPENWEATHER_FREE_CONFIRMED=true and redeploy. No paid endpoint or new subscription is required by the code. If hosted as static-only, the directory still works but weather requires a server-side function deployment.
+Current conditions use the current weather endpoint; high/low are the extrema of available three-hour forecast points over the next 24 hours, not official calendar-day extrema. Weather is cached by rounded region for ten minutes, best effort per edge location; this is not a global quota limiter. Monitor provider usage and keep the free-plan gate off if billing cannot be capped.
+Rollback source: backup/pre-connected-services. Existing help content remains accessible via the homepage and directory.
