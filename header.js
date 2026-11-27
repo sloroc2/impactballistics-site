@@ -6,19 +6,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Build header
   mount.innerHTML = `
     <div class="brand">
-      <img class="logo-img" src="second_logo.png" alt="" width="24" height="24" decoding="async">
+      <img class="logo-img" src="/second_logo.png" alt="" width="24" height="24" decoding="async">
       <strong>Impact Ballistics</strong>
     </div>
 
     <button class="header-toggle" aria-label="Menu" aria-expanded="false">☰</button>
 
     <nav class="site-nav" aria-label="Primary">
-      <a href="index.html">Home</a>
-      <a href="help.html">Help</a>
-      <a href="screenshots.html">Screenshots</a>
-      <a href="wind-hold-challenge.html">Wind Challenge</a>
-      <a href="legal.html">Legal</a>
-      <a href="privacy.html">Privacy</a>
+      <a href="/index.html">Home</a>
+      <a href="/services/">Connected Services</a>
+      <a href="/screenshots.html">Screenshots</a>
+      <a href="/wind-hold-challenge.html">Wind Challenge</a>
+      <a href="/legal.html">Legal</a>
+      <a href="/privacy.html">Privacy</a>
     </nav>
   `;
 
@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const normalize = (url) => {
     try {
       const u = new URL(url, window.location.href);
+      if(u.pathname.replace(/\/$/,'')==='/services')return 'services';
       return (u.pathname.split('/').filter(Boolean).pop() || 'index.html').toLowerCase();
     } catch { return 'index.html'; }
   };
