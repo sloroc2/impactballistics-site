@@ -13,7 +13,7 @@ export async function onRequestGet({request,env,waitUntil}){
  }else if(mode==="auto"||mode==="gps"){
   const rawLat=mode==="gps"?params.get("lat"):cf.latitude;
   const rawLon=mode==="gps"?params.get("lon"):cf.longitude;
-  if(rawLat==null||rawLon==null||String(rawLat).trim()===""||String(rawLon).trim()==="")return json({available:false,error:"Location unavailable."},mode==="gps"?400:503);
+  if(rawLat==null||rawLon==null||String(rawLat).trim()===""||String(rawLon).trim()==="")return mode==="gps"?json({available:false,error:"Location unavailable."},400):json({available:false},503);
   const lat=Number(rawLat),lon=Number(rawLon);
   if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return json({available:false,error:"Invalid location."},400);
   const y=lat.toFixed(1),x=lon.toFixed(1);
